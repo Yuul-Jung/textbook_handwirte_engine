@@ -2,7 +2,7 @@
 /**
  * Plugin Name: YJA Annotation Pilot
  * Description: 독립 전자교재 판서 엔진의 관리자 전용 연동 시험. 쇼트코드 [yja_annotation].
- * Version: 0.29.0
+ * Version: 0.30.0
  * Requires at least: 6.2
  * Requires PHP: 7.4
  * Author: YJA
@@ -107,7 +107,7 @@ final class YJA_Annotation_Pilot {
     public static function settings_page() {
         if (!current_user_can('manage_options')) { wp_die('관리자 권한이 필요합니다.'); }
         $raw = get_option(self::OPTION, '');
-        echo '<div class="wrap"><h1>전자교재 판서 시험 v29</h1><p>관리자 전용 독립 시험입니다. 기본 교재의 관리자별 서버 저장을 시험합니다. 실제 수강생 권한은 연동하지 않습니다.</p>';
+        echo '<div class="wrap"><h1>전자교재 판서 시험 v30</h1><p>관리자 전용 독립 시험입니다. 기본 교재의 관리자별 서버 저장을 시험합니다. 실제 수강생 권한은 연동하지 않습니다.</p>';
         settings_errors(self::OPTION);
         echo '<form method="post" action="options.php">'; settings_fields(self::GROUP);
         echo '<h2>외부 교재 등록 (선택)</h2><label for="yja-registry">한 줄에 ID | 제목 | HTTPS 주소 · 최대 20개</label>';

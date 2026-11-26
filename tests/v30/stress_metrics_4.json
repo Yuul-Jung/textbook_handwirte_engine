@@ -1,0 +1,9 @@
+{
+  "gestures": 100,
+  "mouse": 50,
+  "simulated_pen": 50,
+  "dispatch_wall_ms_median": 16.88,
+  "dispatch_wall_ms_p95": 20.47,
+  "dispatch_wall_ms_max": 27.31,
+  "note": "Python/CDP round-trip wall time for three events, includes automation overhead; not physical input-to-display latency."
+}

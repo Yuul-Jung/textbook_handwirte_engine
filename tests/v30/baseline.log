@@ -1,0 +1,13 @@
+PASS real capture loss with button down observed
+FAIL capture loss retains exactly one stroke
+FAIL recovered stroke retains final endpoint
+PASS true cancellation after loss discards stroke
+PASS Escape after loss discards stroke
+PASS blur after loss discards stroke
+PASS next normal input commits once
+FAIL capture API failure falls back to window tracking
+FAIL no duplicated commit from layer and window
+PASS committed ink and visible nodes agree
+PASS unique IDs
+PASS no browser exception
+8/12 capture checks passed

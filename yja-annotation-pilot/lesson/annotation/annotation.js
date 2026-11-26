@@ -1,4 +1,4 @@
-/* YJ Annotation Engine v29 — no dependencies, no network requests. */
+/* YJ Annotation Engine v30 — no dependencies, no network requests. */
 (() => {
     'use strict';
     const NS = 'http://www.w3.org/2000/svg', SCHEMA = 1, LIMIT = 4000, POINT_LIMIT = 10000, TOTAL_POINTS = 150000;
@@ -1035,12 +1035,16 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             }
         }
         function down(e) {
+            // A fresh press from the same pointer cannot continue an orphaned gesture.
+            if(live?.captureLost&&live.pointer===e.pointerId&&live.pointerType===e.pointerType&&canDraw(e.pointerType,e.button,inputMode,barrelErase))finish(false);
             if(tool==='select'||navHeld||!visible||live||!canDraw(e.pointerType,e.button,inputMode,barrelErase)){if(!live)recordInput(e,samplePressure(e.pointerType,e.pressure,pressure,mouseMock));return;}
             if(e.target?.closest?.('.yja-board-nav')||(pageEnabled&&protectedTarget(e)))return;const anchor=anchorAt(e);if(!anchor)return;
             e.preventDefault();e.stopPropagation();
-            try{layer.setPointerCapture(e.pointerId);}catch{status('입력 캡처 실패 · 다시 시도',true);return;}
+            let captureLost=false;
+            // Capture is an optimization, not a prerequisite: window capture listeners track the accepted gesture.
+            try{layer.setPointerCapture(e.pointerId);}catch{captureLost=true;}
             const activeTool=e.pointerType==='pen'&&(e.button===5||(e.buttons&32)||(barrelErase&&(e.button===2||(e.buttons&2))))?'eraser':tool;
-            live={pointer:e.pointerId,pointerType:e.pointerType,ids:new Set(),activeTool,anchor,last:null};
+            live={pointer:e.pointerId,pointerType:e.pointerType,ids:new Set(),activeTool,anchor,last:null,captureLost};
             if(activeTool==='eraser'){recordInput(e,samplePressure(e.pointerType,e.pressure,pressure,mouseMock));erase(e);return;}
             if(activeTool==='laser'){setLaser(e,anchor);return;}
             if(activeTool==='edit'){editDown(e,anchor);return;}
@@ -1116,14 +1120,19 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             move(e,true);
             finish(true);
         } });
-        // v09: Chromium may not retarget captured events after SVG descendants are replaced.
-        // Layer handlers stop propagation; fallback handles only events that escape the layer.
-        window.addEventListener('pointermove',e=>{if(live?.pointer===e.pointerId&&live.pointerType===e.pointerType)move(e);});
-        window.addEventListener('pointerup',e=>{if(live?.pointer===e.pointerId&&live.pointerType===e.pointerType){move(e,true);finish(true);}});
-        window.addEventListener('pointercancel',e=>{if(live?.pointer===e.pointerId&&live.pointerType===e.pointerType)finish(false);});
-        for (const event of ['pointercancel', 'lostpointercapture'])
-            layer.addEventListener(event, e => { if (live?.pointer === e.pointerId && live.pointerType===e.pointerType)
-                finish(false); });
+        // v30: observe accepted pointer events before host handlers can stop bubbling.
+        // move() stops propagation; finish() clears live before releasing capture.
+        window.addEventListener('pointermove',e=>{if(live?.pointer===e.pointerId&&live.pointerType===e.pointerType)move(e);},true);
+        window.addEventListener('pointerup',e=>{if(live?.pointer===e.pointerId&&live.pointerType===e.pointerType){move(e,true);finish(true);}},true);
+        window.addEventListener('pointercancel',e=>{if(live?.pointer===e.pointerId&&live.pointerType===e.pointerType)finish(false);},true);
+        layer.addEventListener('pointercancel',e=>{if(live?.pointer===e.pointerId&&live.pointerType===e.pointerType)finish(false);});
+        layer.addEventListener('lostpointercapture',e=>{
+            if(live?.pointer!==e.pointerId||live.pointerType!==e.pointerType)return;
+            // Lost capture while still pressed is a routing change, NOT cancellation.
+            // Keep the current samples; only pointerup commits. Cancel/blur/geometry changes still discard.
+            if(e.buttons!==0){live.captureLost=true;return;}
+            finish(false);
+        });
         window.addEventListener('keydown', e => { if (e.defaultPrevented || e.isComposing || e.keyCode===229 || e.altKey || (e.ctrlKey&&e.metaKey)) return; if (e.target.closest?.('.yja-output-dialog,input,textarea,select,[contenteditable],[role=textbox],[role=combobox],[role=slider],[role=spinbutton],[role=menu],[role=tablist]'))
             return; if (e.key === 'Escape') {
             if(e.repeat){e.preventDefault();return;}
