@@ -1,0 +1,9 @@
+node --check: exit 0
+Tested Git blob: 773ba5ef109ca857371c8a8d3518406993b0f4a0
+Chromium Playwright local:
+test_color.py: 23 PASS (exit 0)
+test_layout.py: 11 PASS (exit 0)
+test_text.py: 18 PASS (exit 0)
+test_v42.py: 15 PASS (exit 0)
+Contrast normal 10.30:1, active 9.72:1.
+Layout screenshot reviewed: top controls visible at 1280x640.
