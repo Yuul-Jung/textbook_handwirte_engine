@@ -1,0 +1,33 @@
+PASS mouse primary draws in both mode
+PASS mouse navigates in pen-only mode
+PASS pen draws in both input modes
+PASS pen eraser standard button 5 accepted
+PASS mouse right and touch are not drawing inputs
+PASS mouse uses fixed width, not synthetic 0.5
+PASS mouse simulation endpoints and pressure disabled
+PASS pen pressure and bounds
+PASS pen release zero uses previous pressure
+PASS variable width monotonic
+PASS distance and degenerate segment
+PASS eraser pen near edge and miss
+PASS eraser single dot
+PASS eraser rectangle hits outline not interior
+PASS eraser ellipse hits outline not interior
+PASS eraser arrow head and highlight
+PASS ink path finite, single dot and duplicate points
+PASS pressure changes actual SVG path
+PASS smoothing preserves endpoints and pressure
+PASS smoothing short strokes stays identical
+PASS experimental barrel eraser opt-in and never mouse
+PASS move clamps whole stroke and preserves input
+PASS resize preserves ratio and pressure, prevents flipping
+PASS resize respects both anchor axes
+PASS single point bounds and movement
+PASS lasso enclosed dot and crossing sparse line
+PASS lasso rejects outside and bounding box false positive
+PASS lasso hits rectangle/ellipse outline not empty interior
+PASS lasso detects arrowhead and rejects short polygon
+PASS group edge clamp preserves spacing and source
+PASS group scale applies same ratio to all items
+PASS lasso rejects straight diagonal and accepts closed loop
+32 core tests passed; no browser or physical input tested.

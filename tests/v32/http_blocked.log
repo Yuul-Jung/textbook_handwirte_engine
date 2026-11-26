@@ -1,0 +1,1 @@
+Chromium page.goto(https://yja.test/) with route.fulfill: net::ERR_BLOCKED_BY_ADMINISTRATOR. HTTP/S and native SRI not validated.

@@ -1,3 +1,18 @@
+# 전자교재 판서 엔진 v32 — 공통 로더 및 버전 호환성
+
+- `annotation_external_v32.html`: 기존 교재와 JSON 설정 + 공통 로더 연결 예제.
+- `annotation-loader.js`: 고정 버전 로딩(CSS → 설정 → 엔진), SHA-384 SRI, 중복 방지 및 실패 상태 관리. 기존 플러그인과 독립 HTML은 v31 유지.
+- `releases/v31/`, `releases/v32/`: 핵심 파일 3종의 고정 릴리스. v32의 엔진 자체는 v31과 동일.
+- 최초 교재 연결: 기존 JSON 설정(`external:true`, `pageInk:true`)과 아래 한 줄을 넣는다. 기존 HTML의 위치에 맞게 로더 경로를 조정한다.
+
+```html
+<script src="annotation-loader.js" data-yja-release="v32" defer></script>
+```
+
+- 롤백: `data-yja-release="v31"`로 변경하고 페이지를 다시 연다. 출처와 교재 ID 유지, 사전 JSON 백업 권장. HTTP(S) 필요; file:// 직접 실행은 기존 v31 독립 HTML 사용. 교차 출처는 CORS 허용 필요. 자동 최신 버전 추적 금지.
+- 개발 확인: `node tests/test_loader_v32.cjs`, `python tests/test_loader_browser_v32.py`. 상세 `VALIDATION_v32.md`, `ANNOTATION_STANDARD_v32.md`.
+- 실제 운영 배포 보류. 실제 HTTP(S) 시험은 환경 정책으로 차단되어 모의 네트워크/저장 시험과 구분한다.
+
 # 전자교재 판서 엔진 v31 — 외부 연결 및 원본 불변성
 
 - 신규 외부 연결 시험: `annotation_external_v31.html` (`external:true, pageInk:true`).

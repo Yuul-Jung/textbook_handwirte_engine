@@ -1,0 +1,20 @@
+PASS near horizontal auto line
+PASS axis snap horizontal
+PASS axis snap vertical in pixels
+PASS diagonal unchanged
+PASS short line not snapped
+PASS rectangle with small noise
+PASS ellipse not rectangle
+PASS circle reverse direction
+PASS open rectangle rejected
+PASS tiny closed loop rejected
+PASS triangle rejected
+PASS double loop rejected
+PASS line retracing rejected
+PASS scribble rejected
+PASS raw input unchanged
+PASS degenerate extent rejected
+PASS highlight line retains endpoints
+PASS highlight rectangle closed with axis aligned edges
+PASS highlight ellipse closed and bounded
+19 shape checks passed
