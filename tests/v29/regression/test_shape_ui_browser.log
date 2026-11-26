@@ -1,0 +1,15 @@
+PASS shape controls directly available
+PASS ordinary pen unchanged
+PASS rough horizontal corrected
+PASS undo restores rough pen
+PASS redo restores line
+PASS rough box corrected
+PASS background straight line
+PASS rough vertical corrected
+PASS zigzag preserved
+PASS axis off keeps incline
+PASS explicit line
+PASS explicit rectangle
+PASS normal pen exits recognition
+PASS no browser exceptions
+14 shape UI checks passed

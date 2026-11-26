@@ -1,0 +1,23 @@
+PASS initial load with version zero
+PASS authenticated adapter exists
+PASS actual mouse stroke
+PASS no implicit server write
+PASS unsaved changes visibly indicated
+PASS no shared localStorage
+PASS explicit save contains actual stroke
+PASS reload restores saved stroke
+PASS stale save blocked and local ink retained
+PASS explicit conflict recovery restores server
+PASS failure keeps unsaved ink
+PASS retry succeeds
+PASS server export excludes unsaved stroke
+PASS export does not replace local ink
+PASS delete replaces server payload with tombstone
+PASS delete clears local strokes
+PASS deleted ink cannot be undone
+PASS delete disabled for tombstone
+PASS positive tombstone version loads
+PASS session expiry disables all server actions
+PASS session expiry preserves unsaved ink
+PASS no uncaught JS errors
+22 browser checks passed (offline mock fetch + origin comparison substitution).

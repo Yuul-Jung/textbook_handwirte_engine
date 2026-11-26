@@ -1,0 +1,28 @@
+PASS margin stroke stored
+PASS full background option
+2개 출력 준비 · 판서 포함
+PASS multiple tiles
+SIZES [(1640, 2252), (1640, 1152)]
+PASS full height and width
+PASS header background
+2개 출력 준비 · 원본만
+PASS margin ink differs from original
+PASS print enabled
+PASS storage unchanged
+PASS original markup and scroll preserved
+PASS corrupt raw unchanged
+PASS raw backup control
+PASS raw download exact
+PASS valid import repairs corruption
+PASS corrupt original archived
+PASS restored visible after reboot
+PASS archive failure protects primary
+PASS invalid import cannot overwrite corrupt original
+PASS primary quota preserves archive and original
+PASS recovery retry saves validated data
+PASS previous archive protected
+PASS other tab primary not overwritten
+PASS quota failure keeps visible ink
+PASS retry saves ink
+PASS no browser errors
+24/24 checks passed

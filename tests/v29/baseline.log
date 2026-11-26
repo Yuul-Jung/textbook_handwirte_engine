@@ -1,0 +1,15 @@
+PASS margin stroke stored
+FAIL full background option
+PASS original markup and scroll preserved
+PASS corrupt raw unchanged
+FAIL raw backup control
+FAIL valid import repairs corruption
+FAIL corrupt original archived
+FAIL restored visible after reboot
+PASS archive failure protects primary
+PASS previous archive protected
+PASS other tab primary not overwritten
+PASS quota failure keeps visible ink
+PASS retry saves ink
+PASS no browser errors
+9/14 checks passed

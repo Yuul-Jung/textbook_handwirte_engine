@@ -1,0 +1,12 @@
+PASS standalone shape shortcut selects highlighter line
+PASS mock storage saves a two-point highlighter line
+PASS standalone reinitialization preserves saved bytes and visible stroke
+PASS left dock selectable
+PASS keyboard grip fast step 48 CSS px
+PASS dock selector returns from float to bottom
+PASS menu open does not scroll document
+PASS bottom dock menu first control visible
+PASS tool access changes do not modify stroke payload
+PASS small viewport toolbar stays on screen
+PASS no browser errors
+11/11 standalone checks passed

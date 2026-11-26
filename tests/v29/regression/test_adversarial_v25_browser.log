@@ -1,0 +1,18 @@
+PASS mock storage initial draw
+PASS opening whiteboard retains existing chapter stroke visible
+board open rendered 1 stored 1
+PASS board open keeps original ink geometry
+PASS closing board restores original stroke
+PASS closing board returns to lecture scroll position
+PASS board toggle preserves stored bytes
+PASS held Escape does not cascade from shape to reading
+PASS modified letter not consumed as plain shortcut
+PASS Shift+P preserves highlighter
+PASS section stroke created
+PASS full-page mode can select existing section stroke
+PASS cross-scope edit preserves anchor and moves stroke
+PASS cross-scope move undo restores original
+PASS missed mouse release cancels orphan drag
+PASS fresh mouse input after orphan drag works
+PASS no page errors
+16/16 independent checks passed

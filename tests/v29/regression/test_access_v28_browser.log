@@ -1,0 +1,25 @@
+PASS g activates 자동 도형
+PASS g toggles back to pen
+PASS i activates 직선
+PASS i toggles back to pen
+PASS b activates 사각형
+PASS b toggles back to pen
+PASS j activates 화살표
+PASS j toggles back to pen
+PASS o activates 타원
+PASS o toggles back to pen
+PASS shortcut retains highlighter medium
+PASS shortcut returns free highlighter
+PASS shortcut works with own toolbar button focused
+PASS second shortcut without Tab or click
+PASS opening more reveals first item without another scroll
+PASS keyboard open focuses first menu control
+PASS closing more restores focus to trigger
+PASS collapse resets toolbar scroll
+PASS keyboard reopen keeps primary pen accessible
+PASS keyboard grip moves toolbar left
+PASS typing is not intercepted
+PASS modified shortcut not intercepted
+PASS Space on focused button still activates button
+PASS no browser exceptions
+24/24 accessibility checks passed
