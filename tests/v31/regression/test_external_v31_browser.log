@@ -1,0 +1,26 @@
+PASS exact original host outerHTML in reading mode
+PASS host and surrounding layout unchanged
+PASS only one toolbar on duplicate load
+PASS reading-mode host keyboard does not select pen
+PASS original keyboard handler received p
+PASS original copy handler retained
+PASS original checkbox works
+PASS original details toggle works
+PASS original input works
+PASS original code horizontal scroll works
+PASS original navigation works
+PASS page ink saves exactly one stroke
+PASS host DOM untouched during active ink
+PASS section ink uses original ID
+PASS board is outside original host
+PASS board open preserves original DOM
+PASS board ink is saved
+PASS board close preserves original DOM
+PASS escape returns to reading
+PASS missing CSS fails closed
+PASS missing ID fails closed
+PASS ambiguous host fails closed
+PASS invalid external scope fails closed
+PASS unsupported body transform fails closed
+PASS no browser exceptions
+25/25 external checks passed
