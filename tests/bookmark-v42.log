@@ -1,0 +1,18 @@
+node --check: exit 0
+Tested blob: 6dd8052b26c8707c2d1a96ff5cd54e7f400d3faa
+Chromium Playwright local synthetic lesson: test_color.py 23 PASS, test_layout.py 11 PASS, test_v42.py 15 PASS. All three exit 0.
+PASS initially hidden without horizontal overflow
+PASS right drawer opens
+PASS open no overflow
+PASS still open after five seconds
+PASS slide immediately disables toolbar hit testing
+PASS smooth movement to right
+PASS no horizontal overflow during slide
+PASS hidden beyond edge
+PASS no horizontal overflow after close
+PASS ink layer and strip remain
+PASS reopens after slide
+PASS F8 immediate off
+PASS F8 on hidden
+PASS reduced motion
+PASS no exceptions

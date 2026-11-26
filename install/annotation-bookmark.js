@@ -1370,9 +1370,13 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
 
 /* v38: edge drawer, independent of ink and lesson layout. */
 const edgeCss = `
-/* v41: fade without moving or intercepting the lesson; reduced-motion preference respected. */
-.yja-ui[data-yja-edge-open]{transition:opacity 220ms ease,visibility 0s linear;opacity:1}
-.yja-ui[data-yja-edge-open="false"]{visibility:hidden!important;opacity:0!important;pointer-events:none!important;transition:opacity 220ms ease,visibility 0s linear 220ms}
+/* v42: dock-directed slide, independently of the existing positioning transform. */
+.yja-ui[data-yja-edge-open]{translate:0 0;opacity:1;transition:translate 320ms cubic-bezier(.2,.75,.25,1),opacity 320ms ease,visibility 0s linear}
+.yja-ui[data-yja-edge-open="false"]{visibility:hidden!important;opacity:0!important;pointer-events:none!important;transition:translate 850ms cubic-bezier(.35,0,.2,1),opacity 850ms ease,visibility 0s linear 850ms}
+.yja-ui[data-yja-edge-open="false"][data-dock="right"]{translate:calc(100% + 16px) 0}
+.yja-ui[data-yja-edge-open="false"][data-dock="left"]{translate:calc(-100% - 16px) 0}
+.yja-ui[data-yja-edge-open="false"][data-dock="bottom"]{translate:0 calc(100% + 16px)}
+/* Floating position is preserved; fade instead of altering the saved drag coordinates. */
 @media(prefers-reduced-motion:reduce){.yja-ui[data-yja-edge-open]{transition:none!important}}
 .yja-edge-tab{all:initial;box-sizing:border-box;position:fixed;z-index:2147483001;right:0;top:50%;transform:translateY(-50%);width:10px;height:76px;padding:0;border:0;border-radius:5px 0 0 5px;background:#526479;opacity:.72;cursor:pointer;touch-action:manipulation;display:block;color:white}
 .yja-edge-tab::after{content:'';position:absolute;inset:27px 3px;border-radius:2px;background:currentColor}
@@ -1462,7 +1466,7 @@ function installEdgeDrawer() {
       if (held!==null || focusHeld()) return;
       if (last && (contains(document.elementFromPoint(last.x,last.y)) || last.edge)) return;
       setOpen(false);
-    }, 3400);
+    }, 5400);
   }
   function move(e) {
     if (!enabled) return;
@@ -1526,6 +1530,6 @@ window.addEventListener('keydown', event => {
   event.preventDefault();
   toggle();
 }, true);
-Object.defineProperty(window, '__YJA_BOOKMARK_V1', {value: Object.freeze({version:'41.0.0',toggle}),configurable:false});
+Object.defineProperty(window, '__YJA_BOOKMARK_V1', {value: Object.freeze({version:'42.0.0',toggle}),configurable:false});
 toggle();
 })();
