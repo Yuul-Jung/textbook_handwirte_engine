@@ -1,4 +1,4 @@
-/* YJ Annotation Engine v28 — no dependencies, no network requests. */
+/* YJ Annotation Engine v29 — no dependencies, no network requests. */
 (() => {
     'use strict';
     const NS = 'http://www.w3.org/2000/svg', SCHEMA = 1, LIMIT = 4000, POINT_LIMIT = 10000, TOTAL_POINTS = 150000;
@@ -570,7 +570,8 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
 기울기 X/Y: ${diagnostic.tiltX}/${diagnostic.tiltY}
 입력: ${inputMode==='both'?'펜+마우스':'펜만 판서'}`;}
         function recordInput(e,p,refreshNow=true){const type=e.pointerType||'unknown';if(diagnostic.type!==type){diagnostic.min=1;diagnostic.max=0;diagnostic.events=0;}Object.assign(diagnostic,{type,raw:Number(e.pressure)||0,used:p,button:e.button,buttons:e.buttons,tiltX:e.tiltX||0,tiltY:e.tiltY||0});diagnostic.min=Math.min(diagnostic.min,p);diagnostic.max=Math.max(diagnostic.max,p);diagnostic.events++;if(refreshNow)updateDiag();}
-        button(more, 'export', '내보내기', () => { const b = new Blob([serializedPayload()], { type: 'application/json' }); const u = URL.createObjectURL(b); const a = el('a'); a.href = u; a.download = '판서-' + chapter.replace(/[^\w-]/g, '_') + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(u), 1000); });
+        function downloadRaw(raw,suffix=''){const b=new Blob([raw],{type:'application/json'}),u=URL.createObjectURL(b),a=el('a');a.href=u;a.download='판서-'+chapter.replace(/[^\w-]/g,'_')+suffix+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
+        button(more, 'export', '내보내기', () => downloadRaw(serializedPayload()));
         const file = el('input');
         file.type = 'file';
         file.accept = '.json,application/json';
@@ -583,11 +584,24 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
                 return;
             if (f.size > 15e6)
                 throw Error('파일이 너무 큽니다');
+            const before=strokes,beforeBoards=boards,beforeActive=activeBoard;
             const next = validate(JSON.parse(await f.text()));
+            if(live||before!==strokes||beforeBoards!==boards||beforeActive!==activeBoard)throw Error('읽는 동안 판서가 변경되었습니다. 다시 불러오세요.');
             if (!confirm('이 장의 현재 판서를 가져온 데이터로 교체할까요?'))
                 return;
+            // Only a known corrupt startup record is replaceable; never overwrite another tab.
+            if(corruptRaw!==null&&storageBlocked){
+                if(!confirm('오류 원본을 별도 보존하고 복구할까요?'))return;
+                const archive=key+':recovery';
+                if(store.getItem(key)!==corruptRaw)throw Error('다른 탭에서 변경된 원본 · 복구 중단');
+                const previous=store.getItem(archive);
+                if(previous!==null&&previous!==corruptRaw)throw Error('기존 복구 원본 존재 · 오류 원본 백업 후 별도 확인 필요');
+                store.setItem(archive,corruptRaw);
+                if(store.getItem(archive)!==corruptRaw||store.getItem(key)!==corruptRaw)throw Error('오류 원본 보존 확인 실패 · 복구 중단');
+                storageBlocked=false;
+            }
             commit(next.strokes,next.boards,next.activeBoard);
-            if(!saveFailed)status('가져오기 완료');
+            if(!saveFailed){corruptRaw=null;refreshRecovery();status('가져오기 완료');}
         }
         catch (e) {
             status('가져오기 실패: ' + e.message, true);
@@ -602,22 +616,23 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         const recoveryText=el('div','yja-recovery-text');recoveryText.setAttribute('role','alert');recovery.append(recoveryText);
         const retry=button(recovery,'retrySave','저장 재시도',()=>{save();refresh();});
         button(recovery,'backupNow','긴급 백업',()=>buttons.get('export').click());
+        const rawBackup=button(recovery,'rawBackup','오류 원본 백업',()=>{if(corruptRaw!==null)downloadRaw(corruptRaw,'-오류원본');});
         const sessionInfo=el('div','yja-help yja-session-info');more.append(sessionInfo);
         const info = el('div', 'yja-status', '읽기');
         info.setAttribute('role', 'status');
         ui.append(info);
         function status(t, w = false) { info.textContent = t; info.dataset.warn = String(w); }
-        function refreshRecovery(){recovery.hidden=!saveFailed;retry.disabled=storageBlocked;recoveryText.textContent=storageBlocked?'저장 충돌/읽기 오류 · 백업 후 새로고침':'저장 실패 · 재시도 또는 백업';}
+        function refreshRecovery(){recovery.hidden=!saveFailed;retry.disabled=storageBlocked;rawBackup.hidden=corruptRaw===null;recoveryText.textContent=storageBlocked?(corruptRaw!==null?'오류 원본 백업 · 정상 JSON 불러오기 가능':'저장 충돌/읽기 오류 · 백업 후 새로고침'):'저장 실패 · 재시도 또는 백업';}
         function payload() { return { schema: SCHEMA, course, chapter, revision, strokes, boards, activeBoard }; }
         function validate(o) { if (!o || o.schema !== SCHEMA || o.course !== course || o.chapter !== chapter || o.revision !== revision || !Array.isArray(o.strokes) || o.strokes.length > LIMIT)
             throw Error('스키마 또는 교재/장/개정 ID 불일치'); const pageData=validateBoards(o.boards,o.activeBoard),validBoardIds=new Set(pageData.boards.map(b=>b.id)); let total = 0; const ids = new Set(); const validated=o.strokes.map(s => { if (!s || typeof s.id !== 'string' || s.id.length > 100 || ids.has(s.id) || !(isBoardId(s.anchor)?validBoardIds.has(s.anchor):anchors.has(s.anchor)) || !drawTools.includes(s.tool) || !colors.includes(s.color) || !Number.isFinite(s.width) || s.width < 1 || s.width > 12 || !Array.isArray(s.layout) || s.layout.length < 2 || s.layout.length > 100 || !s.layout.every(Number.isFinite) || !Array.isArray(s.points) || !s.points.length || s.points.length > POINT_LIMIT || (total += s.points.length) > TOTAL_POINTS || (!['pen', 'highlight'].includes(s.tool) && s.points.length !== 2))
             throw Error('잘못된 판서 데이터'); ids.add(s.id); return { id: s.id, anchor: s.anchor, tool: s.tool, color: s.color, width: s.width, layout: s.layout.slice(), smooth: s.smooth === true, points: s.points.map(p => { if (!Array.isArray(p) || p.length !== 3 || !p.every(Number.isFinite) || p[0] < 0 || p[0] > 1 || p[1] < 0 || p[1] > 1 || p[2] < 0 || p[2] > 1)
                 throw Error('잘못된 좌표'); return p.slice(); }) }; }); return {...pageData,strokes:validated}; }
         // v12: retain the exact loaded value; never silently replace a changed or corrupt record.
-        let storedRaw = null;
+        let storedRaw = null, corruptRaw = null;
         try {
             const raw = store.getItem(key); storedRaw = raw;
-            if (raw !== null){const loaded=validate(JSON.parse(raw));({strokes,boards,activeBoard}=loaded);}
+            if (raw !== null){try{const loaded=validate(JSON.parse(raw));({strokes,boards,activeBoard}=loaded);}catch(e){corruptRaw=raw;throw e;}}
             syncBoard();
         }
         catch (e) {
@@ -635,7 +650,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             store.setItem(key, raw); storedRaw = raw;
             // Read back to detect an immediate conflicting write; not atomic across tabs.
             if(store.getItem(key)!==raw){storageBlocked=true;saveFailed=true;return;}
-            saveSuccesses++;dirty = false;
+            saveSuccesses++;dirty = false;corruptRaw=null;
             saveFailed = false;
         }
         catch (e) {
@@ -779,13 +794,13 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             const settings=el('div','yja-output-settings');dialog.append(settings);
             function choice(label,options){const l=el('label','',label),s=el('select');s.setAttribute('aria-label',label);for(const [v,t] of options){const o=el('option','',t);o.value=v;s.append(o);}l.append(s);settings.append(l);return s;}
             const lessonSections=sections.filter(e=>e!==board);
-            const scope=choice('출력 범위',[['chapter','교재 전체'],...lessonSections.map(e=>['section:'+e.dataset.yjaAnchor,e.querySelector('h2,h3')?.textContent||e.dataset.yjaAnchor]),['board','현재 백지'],['boards','전체 백지'],['all','교재 + 전체 백지']]);
+            const scope=choice('출력 범위',[['chapter','교재 전체 (절별)'],['page','전체 배경 · 여백 포함'],...lessonSections.map(e=>['section:'+e.dataset.yjaAnchor,e.querySelector('h2,h3')?.textContent||e.dataset.yjaAnchor]),['board','현재 백지'],['boards','전체 백지'],['all','교재 + 전체 백지']]);
             const ink=choice('판서 포함',[['yes','판서 포함'],['no','원본만']]);
             const quality=choice('이미지 해상도',[['1','표준 (1배)'],['2','고해상도 (2배)']]);
             const orientation=choice('PDF 용지',[['portrait','A4 세로'],['landscape','A4 가로']]);
             const create=el('button','','미리보기 생성');create.type='button';settings.append(create);
             const print=el('button','','PDF 저장 / 인쇄');print.type='button';print.disabled=true;settings.append(print);
-            const message=el('p','yja-output-message','절·백지별 PNG를 생성합니다. PDF는 이미지 기반이며 인쇄 창에서 저장합니다. 긴 절은 한 장에 맞춰 축소됩니다.');message.setAttribute('role','status');dialog.append(message);
+            const message=el('p','yja-output-message','절·백지별 또는 전체 배경 PNG를 생성합니다. 전체 배경은 긴 페이지를 나누어 출력합니다. PDF는 이미지 기반입니다.');message.setAttribute('role','status');dialog.append(message);
             const previews=el('div','yja-output-previews');dialog.append(previews);
             const printRoot=el('div','yja-print-root');document.body.append(dialog,printRoot);
             const printStyle=el('style');document.head.append(printStyle);
@@ -803,6 +818,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
                     const v=scope.value,include=ink.value==='yes',scale=Number(quality.value),land=orientation.value==='landscape';
                     const snapshotStrokes=strokes.slice(),snapshotBoards=boards.slice();
                     const targets=[];
+                    if(v==='page')targets.push({id:'page',title:'전체 배경',page:true});
                     if(v==='chapter'||v==='all')for(const e of lessonSections)targets.push({id:e.dataset.yjaAnchor,e,title:e.querySelector('h2,h3')?.textContent||e.dataset.yjaAnchor});
                     if(v.startsWith('section:')){const e=anchors.get(v.slice(8));if(e)targets.push({id:e.dataset.yjaAnchor,e,title:e.querySelector('h2,h3')?.textContent||e.dataset.yjaAnchor});}
                     if(['board','boards','all'].includes(v))for(const b of snapshotBoards.filter(b=>v!=='board'||b.id===activeBoard))targets.push({id:b.id,title:b.name,board:true});
@@ -814,6 +830,25 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
                     for(const t of targets){
                         let stage=null;
                         try{
+                            if(t.page){
+                                const box=physicalPageRect(),w=Math.ceil(box.width),h=Math.ceil(box.height);
+                                if(w<1||h<1||w*scale>8192||w*h*scale*scale>40000000)throw Error('전체 배경 크기 제한 · 표준 해상도 또는 절별 출력 사용');
+                                const origin=pageEnabled?box:layer.getBoundingClientRect();
+                                const extra=[];
+                                for(const s of include?snapshotStrokes:[]){
+                                    const g=strokeGeometry(s,exportCache);
+                                    if(!g){omitted++;continue;}
+                                    extra.push({s,g:{...g,x:g.x+origin.left-box.left,y:g.y+origin.top-box.top}});
+                                }
+                                const xml=exportSection(document.body,[],w,h,w,h,extra,snapshotStrokes,true);
+                                // Crop one immutable snapshot into A4-proportional vertical tiles; no gaps.
+                                const step=Math.max(1,Math.min(Math.floor(8192/scale),Math.floor(w*(land?174/277:261/190))));
+                                for(let y=0,i=1;y<h;y+=step,i++){
+                                    const th=Math.min(step,h-y),tile=xml.replace(/viewBox="0 0 [^"]+"/,`viewBox="0 ${y} ${w} ${th}"`).replace(/^<svg[^>]*>/,m=>m.replace(/height="[^"]+"/,`height="${th}"`));
+                                    outputs.push({id:'page-'+i,title:'전체 배경 '+i,w,h:th,snapshot:tile});
+                                }
+                                continue;
+                            }
                             let source=t.e;
                             if(t.board){
                                 if(t.id===activeBoard&&!board.hidden)source=board;
@@ -845,27 +880,33 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
                         pi.style.width=(mm*o.w)+'mm';pi.style.height=(mm*o.h)+'mm';sheet.append(pi);printRoot.append(sheet);
                     }
                     print.disabled=false;
-                    message.textContent=`${ready.length}개 출력 준비 · ${include?'판서 포함':'원본만'}${omitted?` · 배치 불일치 판서 ${omitted}개 제외`:''}${pageInk.length?` · 전체 판서 중 절 밖 여백은 PNG/PDF 제외 (JSON 보존)${pageInk.length!==pageValid.length?' · 배치 불일치 전체 판서 '+(pageInk.length-pageValid.length)+'개 제외':''}`:''}${shrunk?` · 긴 절 ${shrunk}개 축소 (PNG는 원래 비율)`:''}`;
-                    message.dataset.warn=String(omitted>0||shrunk>0||pageInk.length>0);
+                    message.textContent=`${ready.length}개 출력 준비 · ${include?'판서 포함':'원본만'}${omitted?` · 배치 불일치 판서 ${omitted}개 제외`:''}${pageInk.length&&v!=='page'?` · 전체 판서 중 절 밖 여백은 PNG/PDF 제외 (JSON 보존)${pageInk.length!==pageValid.length?' · 배치 불일치 전체 판서 '+(pageInk.length-pageValid.length)+'개 제외':''}`:''}${shrunk?` · 긴 절 ${shrunk}개 축소 (PNG는 원래 비율)`:''}`;
+                    message.dataset.warn=String(omitted>0||shrunk>0||(v!=='page'&&pageInk.length>0));
                 }catch(e){if(!closed){clear();message.textContent='출력 실패: '+e.message;message.dataset.warn='true';}}
                 finally{busy=false;if(!closed)for(const x of [scope,ink,quality,orientation,create])x.disabled=false;}
             };
             dialog.showModal();
         }
-        function exportSection(source,items,w,h,actualW,actualH,extra=[],order=[]){
+        function exportSection(source,items,w,h,actualW,actualH,extra=[],order=[],full=false){
             // Snapshot computed visual styles; do not execute cloned content or fetch resources.
             const root=source.cloneNode(true),src=[source,...source.querySelectorAll('*')],dst=[root,...root.querySelectorAll('*')];
             const unsafe=/^(SCRIPT|IFRAME|OBJECT|EMBED|VIDEO|AUDIO|CANVAS|INPUT|TEXTAREA|SELECT|FORM|LINK|STYLE)$/i;
+            const excluded=new Set();
+            // Whole-page snapshot excludes only engine UI, non-rendered nodes and executable resources.
+            const skip='.yja-ui,.yja-diagnostic,.yja-layer,.yja-board-nav,.yja-output-dialog,.yja-print-root,.yja-sync-panel,script,style,link,template';
             const props='display position box-sizing width height min-width min-height max-width max-height margin margin-top margin-right margin-bottom margin-left padding padding-top padding-right padding-bottom padding-left border border-top border-right border-bottom border-left border-radius background-color background-image background-size background-position background-repeat color font-family font-size font-weight font-style line-height letter-spacing text-align text-decoration white-space overflow-wrap word-break vertical-align overflow overflow-x overflow-y opacity flex flex-direction flex-wrap justify-content align-items gap row-gap column-gap grid-template-columns grid-template-rows grid-column grid-row list-style-type list-style-position table-layout border-collapse border-spacing text-anchor dominant-baseline fill fill-opacity stroke stroke-width stroke-opacity stroke-linecap stroke-linejoin stroke-dasharray marker-start marker-mid marker-end transform transform-origin'.split(' ');
             for(let i=0;i<src.length;i++){
                 const a=src[i],b=dst[i],tag=a.localName.toLowerCase();
-                if(unsafe.test(tag))throw Error('출력 미지원 요소: '+tag);
+                if(full&&i>0&&(excluded.has(a.parentElement)||a.matches(skip)||getComputedStyle(a).display==='none')){excluded.add(a);b.remove();continue;}
+                const checkInput=full&&tag==='input'&&['checkbox','radio'].includes(a.type);
+                if(unsafe.test(tag)&&!checkInput)throw Error('출력 미지원 요소: '+tag);
+                if(checkInput){b.toggleAttribute('checked',a.checked);b.removeAttribute('name');}
                 if(a.scrollLeft||a.scrollTop)throw Error('내부 스크롤을 처음 위치로 돌린 뒤 다시 출력하세요.');
                 for(const attr of [...b.attributes])if(/^on/i.test(attr.name)||['href','src','srcset','poster','action','style'].includes(attr.name.toLowerCase())||attr.name==='xlink:href'){
                     if((attr.name==='href'||attr.name==='xlink:href')&&attr.value.startsWith('#')&&a.namespaceURI===NS)b.setAttribute(attr.name,attr.value);else b.removeAttribute(attr.name);
                 }
                 const cs=getComputedStyle(a);
-                for(const p of props){let value=cs.getPropertyValue(p);if(!value)continue;
+                for(const p of full?[...props,'top','right','bottom','left','z-index','box-shadow','align-self','justify-self','grid-auto-flow']:props){let value=cs.getPropertyValue(p);if(!value)continue;
                     if(/url\(/i.test(value)){
                         // Only same-document SVG fragment markers; never external CSS assets.
                         const m=value.match(/^url\(["']?(?:[^#"')]*#)([\w:.-]+)["']?\)$/);if(!m||a.namespaceURI!==NS)throw Error('외부 CSS 이미지/참조는 출력할 수 없습니다.');value=`url(#${m[1]})`;
@@ -876,10 +917,14 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
                     if(!a.complete||!a.naturalWidth||a.naturalWidth*a.naturalHeight>16000000)throw Error('이미지 로딩 또는 크기 제한');
                     const c=el('canvas');c.width=a.naturalWidth;c.height=a.naturalHeight;c.getContext('2d').drawImage(a,0,0);b.setAttribute('src',c.toDataURL('image/png'));
                 }
-                if(tag==='button'){b.style.visibility='hidden';}
+                if(full&&cs.position==='sticky'){b.style.position='relative';b.style.top='auto';b.style.bottom='auto';}
+                if(full&&cs.position==='fixed')throw Error('고정 위치 교재 요소는 전체 출력 미지원');
+                if(tag==='button'&&!full){b.style.visibility='hidden';}
             }
-            Object.assign(root.style,{position:'relative',left:'auto',top:'auto',margin:'0',width:actualW+'px',height:actualH+'px',maxWidth:'none',maxHeight:'none',transform:'none'});
-            const wrapper=document.createElementNS('http://www.w3.org/1999/xhtml','div');Object.assign(wrapper.style,{width:w+'px',height:h+'px',overflow:'hidden',background:'#F1F2EE'});wrapper.append(root);
+            let contentRoot=root;
+            if(full){contentRoot=el('div');contentRoot.style.cssText=root.style.cssText;while(root.firstChild)contentRoot.append(root.firstChild);}
+            Object.assign(contentRoot.style,{position:'relative',left:'auto',top:'auto',margin:'0',width:actualW+'px',height:actualH+'px',maxWidth:'none',maxHeight:'none',transform:'none'});
+            const wrapper=document.createElementNS('http://www.w3.org/1999/xhtml','div');Object.assign(wrapper.style,{width:w+'px',height:h+'px',overflow:'hidden',background:'#F1F2EE'});wrapper.append(contentRoot);
             const out=svg('svg',{xmlns:NS,width:w,height:h,viewBox:`0 0 ${w} ${h}`});
             const fo=svg('foreignObject',{x:0,y:0,width:w,height:h});fo.append(wrapper);out.append(fo);
             const marks=new Map(items.map(s=>[s.id,{s,g:{x:0,y:0,w:actualW,h:actualH}}]));for(const item of extra)marks.set(item.s.id,item);
