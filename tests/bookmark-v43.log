@@ -1,0 +1,22 @@
+node --check: exit 0
+Tested blob: 00c7b2de6281527b031559b0136bc877fcc9b5b3
+Chromium Playwright: color 23 PASS, layout 11 PASS, slide 15 PASS; all three exit 0.
+Text test: 18 PASS.
+PASS top gap reduced
+PASS text and edit available
+PASS modal opens
+PASS F8 does not interrupt modal
+PASS text saved
+PASS plain text not HTML
+PASS font size 24px
+PASS lesson unchanged
+PASS cancel leaves original only
+PASS selected text
+PASS delete action enabled
+PASS delete only selected text
+PASS undo restores note
+PASS redo deletes note
+PASS pen still works
+PASS reload preserves text and ink
+PASS toolbar deletes only note
+PASS no errors

@@ -54,7 +54,7 @@ let bookmarkBridge;
   }
   function toggle() {
     if (!ready || !ui()) return 'failed';
-    if (document.querySelector('.yja-output-dialog,.yja-print-root')) return 'busy';
+    if (document.querySelector('.yja-output-dialog,.yja-print-root,.yja-text-dialog')) return 'busy';
     const eye = button('숨김'); if (!eye) return 'failed';
     if (active) {
       const board = button('백지'); if (board?.getAttribute('aria-pressed')==='true') board.click();
@@ -148,7 +148,8 @@ function loadCore() {
         if(active!==undefined&&!seen.has(active))throw Error('활성 백지 오류');
         return {boards,activeBoard:active??boards[0].id};
     }
-    const drawTools = ['pen', 'highlight', 'line', 'arrow', 'rect', 'circle'];
+    const drawTools = ['pen', 'highlight', 'line', 'arrow', 'rect', 'circle', 'text'];
+    const validText=t=>typeof t==='string'&&t.trim().length>0&&t.length<=500&&t.split('\n').length<=8&&!/[\x00-\x09\x0b-\x1f\x7f]/.test(t);
     const svg = (tag, attrs = {}) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs))
         e.setAttribute(k, String(v)); return e; };
     const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls)
@@ -202,6 +203,7 @@ function loadCore() {
     function sweptHit(tool,pts,width,from,to,tolerance=7){
         if(!pts.length)return false;
         const path=outline(tool,pts,width),pen=tool==='pen';
+        if(tool==='text'&&(inPolygon(from,path)||inPolygon(to,path)))return true;
         const radius=p=>pen?penWidth(width,Number.isFinite(p[2])?p[2]:1)/2:(tool==='highlight'?width+10:width)/2;
         const q={l:Math.min(from[0],to[0]),r:Math.max(from[0],to[0]),t:Math.min(from[1],to[1]),b:Math.max(from[1],to[1])};
         const overlaps=(a,b,pad)=>Math.min(a[0],b[0])-pad<=q.r&&Math.max(a[0],b[0])+pad>=q.l&&Math.min(a[1],b[1])-pad<=q.b&&Math.max(a[1],b[1])+pad>=q.t;
@@ -269,7 +271,7 @@ function loadCore() {
     // Lasso uses rendered centerlines, not a bounding-box-only hit test.
     function outline(tool,pts,width) {
         const a=pts[0],b=pts.at(-1);
-        if(tool==='rect')return [a,[b[0],a[1]],b,[a[0],b[1]],a];
+        if(tool==='rect'||tool==='text')return [a,[b[0],a[1]],b,[a[0],b[1]],a];
         if(tool==='circle')return Array.from({length:65},(_,i)=>[(a[0]+b[0])/2+(b[0]-a[0])/2*Math.cos(i*Math.PI/32),(a[1]+b[1])/2+(b[1]-a[1])/2*Math.sin(i*Math.PI/32)]);
         if(tool==='arrow')return [a,b,...arrowHead(a,b,width)];
         return pts;
@@ -313,6 +315,7 @@ function loadCore() {
         if(!validLasso(poly)||!pts.length)return false;
         const path=outline(tool,pts,width),a=pixelBounds(path),b=pixelBounds(poly);
         if(a.r<b.l||b.r<a.l||a.b<b.t||b.b<a.t)return false;
+        if(tool==='text'&&poly.some(p=>inPolygon(p,path)))return true;
         for(let i=0;i<path.length;i++){
             if(inPolygon(path[i],poly))return true;
             if(i)for(let j=0;j<poly.length;j++)if(segmentsCross(path[i-1],path[i],poly[j],poly[(j+1)%poly.length]))return true;
@@ -511,6 +514,8 @@ function loadCore() {
         button(g, 'pen', '펜', () => setTool('pen'));
         button(g, 'highlight', '형광펜', () => setTool('highlight'));
         button(g, 'eraser', '지우개', () => toggleTransient('eraser')).title='지우개 · 다시 누르면 자유 필기 복귀';
+        icons.text='M4 5h16M12 5v14M8 19h8';
+        button(g,'text','텍스트',()=>toggleTransient('text')).title='텍스트 주석 · 위치 클릭 후 입력 · T';
         icons.fullscreen='M3 9V3h6 M15 3h6v6 M21 15v6h-6 M9 21H3v-6';icons.diagnostic='M3 12h4l3-7 4 14 3-7h4';
         icons.laser='M12 2v4M12 18v4M2 12h4M18 12h4 M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8';
         button(g, 'laser', '포인터', () => toggleTransient('laser')).title='포인터 · 다시 누르면 자유 필기 복귀';
@@ -641,7 +646,7 @@ function loadCore() {
             try{presetRaw=store.getItem(presetStorageKey);presetBlocked=false;presetWarning='';persistPresets();}catch{presetBlocked=true;presetWarning='프리셋 저장 불가 · 임시 사용';}
             ({color,width}=styleFor(presetKey(tool)||lastInk));refresh();});
         const help=el('div','yja-help','1~4 즐겨찾기 · P 펜 · H 형광펜 · E 지우개 · V 편집 · A 올가미 · R 읽기 · L 포인터 · G 자동 도형 · I 직선 · B 사각형 · J 화살표 · O 타원 · Space 일시 탐색 · Esc 취소/도형 해제/읽기');more.append(help);
-        const shortcuts={p:'pen',r:'select',e:'eraser',h:'highlight',l:'laser',v:'edit',a:'lasso'};
+        const shortcuts={p:'pen',r:'select',e:'eraser',h:'highlight',l:'laser',v:'edit',a:'lasso',t:'text'};
         const shapeShortcuts={g:'auto',i:'line',b:'rect',j:'arrow',o:'circle'};
         for(const [k,t] of [...Object.entries(shortcuts),...Object.entries(shapeShortcuts)]){const b=buttons.get(t==='auto'?'autoShape':t);b.setAttribute('aria-keyshortcuts',k.toUpperCase());b.title+=' · '+k.toUpperCase()+' 키';}
         const dock = el('select');
@@ -768,7 +773,8 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         ui.insertBefore(cg,g);
         g.classList.add('yja-primary-group');
         const utilityGroup=el('div','yja-group yja-utility-group');
-        for(const id of ['laser','input','edit','lasso'])utilityGroup.append(buttons.get(id));
+        for(const id of ['laser','input','lasso','deleteSelection'])utilityGroup.append(buttons.get(id));
+        buttons.get('deleteSelection').querySelector('small').textContent='선택삭제';
         ui.insertBefore(ug,shapeGroup);
         ui.insertBefore(utilityGroup,mg);
         if(pageButton)ui.insertBefore(pageButton.parentElement,mg);
@@ -780,8 +786,8 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         function refreshRecovery(){recovery.hidden=!saveFailed;retry.disabled=storageBlocked;rawBackup.hidden=corruptRaw===null;recoveryText.textContent=storageBlocked?(corruptRaw!==null?'오류 원본 백업 · 정상 JSON 불러오기 가능':'저장 충돌/읽기 오류 · 백업 후 새로고침'):'저장 실패 · 재시도 또는 백업';}
         function payload() { return { schema: SCHEMA, course, chapter, revision, strokes, boards, activeBoard }; }
         function validate(o) { if (!o || o.schema !== SCHEMA || o.course !== course || o.chapter !== chapter || o.revision !== revision || !Array.isArray(o.strokes) || o.strokes.length > LIMIT)
-            throw Error('스키마 또는 교재/장/개정 ID 불일치'); const pageData=validateBoards(o.boards,o.activeBoard),validBoardIds=new Set(pageData.boards.map(b=>b.id)); let total = 0; const ids = new Set(); const validated=o.strokes.map(s => { if (!s || typeof s.id !== 'string' || s.id.length > 100 || ids.has(s.id) || !(isBoardId(s.anchor)?validBoardIds.has(s.anchor):anchors.has(s.anchor)) || !drawTools.includes(s.tool) || !validColor(s.color) || (s.opacity!==undefined&&!validOpacity(s.opacity)) || !Number.isFinite(s.width) || s.width < 1 || s.width > 12 || !Array.isArray(s.layout) || s.layout.length < 2 || s.layout.length > 100 || !s.layout.every(Number.isFinite) || !Array.isArray(s.points) || !s.points.length || s.points.length > POINT_LIMIT || (total += s.points.length) > TOTAL_POINTS || (!['pen', 'highlight'].includes(s.tool) && s.points.length !== 2))
-            throw Error('잘못된 판서 데이터'); ids.add(s.id); return { id: s.id, anchor: s.anchor, tool: s.tool, color: s.color, width: s.width, ...(s.opacity===undefined?{}:{opacity:s.opacity}), layout: s.layout.slice(), smooth: s.smooth === true, points: s.points.map(p => { if (!Array.isArray(p) || p.length !== 3 || !p.every(Number.isFinite) || p[0] < 0 || p[0] > 1 || p[1] < 0 || p[1] > 1 || p[2] < 0 || p[2] > 1)
+            throw Error('스키마 또는 교재/장/개정 ID 불일치'); const pageData=validateBoards(o.boards,o.activeBoard),validBoardIds=new Set(pageData.boards.map(b=>b.id)); let total = 0; const ids = new Set(); const validated=o.strokes.map(s => { if (!s || typeof s.id !== 'string' || s.id.length > 100 || ids.has(s.id) || !(isBoardId(s.anchor)?validBoardIds.has(s.anchor):anchors.has(s.anchor)) || !drawTools.includes(s.tool) || (s.tool==='text'&&!validText(s.text)) || !validColor(s.color) || (s.opacity!==undefined&&!validOpacity(s.opacity)) || !Number.isFinite(s.width) || s.width < 1 || s.width > 12 || !Array.isArray(s.layout) || s.layout.length < 2 || s.layout.length > 100 || !s.layout.every(Number.isFinite) || !Array.isArray(s.points) || !s.points.length || s.points.length > POINT_LIMIT || (total += s.points.length) > TOTAL_POINTS || (!['pen', 'highlight'].includes(s.tool) && s.points.length !== 2))
+            throw Error('잘못된 판서 데이터'); ids.add(s.id); return { id: s.id, anchor: s.anchor, tool: s.tool, color: s.color, width: s.width, ...(s.opacity===undefined?{}:{opacity:s.opacity}), layout: s.layout.slice(), smooth: s.smooth === true, ...(s.tool==='text'?{text:s.text}:{}), points: s.points.map(p => { if (!Array.isArray(p) || p.length !== 3 || !p.every(Number.isFinite) || p[0] < 0 || p[0] > 1 || p[1] < 0 || p[1] > 1 || p[2] < 0 || p[2] > 1)
                 throw Error('잘못된 좌표'); return p.slice(); }) }; }); return {...pageData,strokes:validated}; }
         // v12: retain the exact loaded value; never silently replace a changed or corrupt record.
         let storedRaw = null, corruptRaw = null;
@@ -833,7 +839,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         function rectOf(a){return a===PAGE_ANCHOR?pageRect():anchors.get(a).getBoundingClientRect();}
         function geometry(anchor) { const h = pageEnabled?pageRect():layer.getBoundingClientRect(), r = rectOf(anchor); return { x: r.left - h.left, y: r.top - h.top, w: r.width, h: r.height }; }
         function localPoint(e, a, previous=null, ending=false,r=rectOf(a),refreshNow=true) { const p = samplePressure(e.pointerType,e.pressure,pressure,mouseMock,previous,ending); recordInput(e,p,refreshNow); return [clamp((e.clientX - r.left) / Math.max(r.width, 1)), clamp((e.clientY - r.top) / Math.max(r.height, 1)), p]; }
-        function protectedTarget(e){return !!e.target?.closest?.('.yja-ui,.yja-diagnostic,.yja-board-nav,.yja-output-dialog,.yja-sync-panel,nav,button,input,select,textarea,a,summary,[contenteditable=true]'+(external?',label,[contenteditable],[role=button],[role=link],[role=checkbox],[role=menuitem],[role=tab],[role=slider],[role=textbox]':''));}
+        function protectedTarget(e){return !!e.target?.closest?.('.yja-text-dialog,.yja-ui,.yja-diagnostic,.yja-board-nav,.yja-output-dialog,.yja-sync-panel,nav,button,input,select,textarea,a,summary,[contenteditable=true]'+(external?',label,[contenteditable],[role=button],[role=link],[role=checkbox],[role=menuitem],[role=tab],[role=slider],[role=textbox]':''));}
         function anchorAt(e) { const section=anchorId(sections.find(a => { const r = a.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; })); if(isBoardId(section))return section; if(pageEnabled&&pageMode){const r=pageRect();if(e.clientX>=r.left&&e.clientX<=r.left+r.width&&e.clientY>=r.top&&e.clientY<=r.top+r.height)return PAGE_ANCHOR;} return section; }
         // Layout signature: fail closed rather than place a mark over the wrong text.
         function layoutOf(a) {
@@ -914,7 +920,11 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             const pts = xy(s, bounds), a = pts[0], b = pts.at(-1), g = svg('g', { 'data-stroke': s.id, 'stroke': s.color, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'fill': 'none' });
             const w = s.width;
             const alpha=s.opacity??defaultOpacity(s.tool);if(alpha!==1)g.setAttribute('opacity',String(alpha));
-            if (s.tool === 'pen') {
+            if(s.tool==='text'){
+                const box=pixelBounds(pts),lines=s.text.split('\n'),size=Math.max(1,(box.b-box.t)/lines.length/1.25);
+                lines.forEach((line,i)=>{const t=svg('text',{x:box.l,y:box.t+size*(1+i*1.25),fill:s.color,stroke:'none','font-family':'system-ui,sans-serif','font-size':size,'xml:space':'preserve'});t.textContent=line;const measured=measureText(line,size);if(measured>box.r-box.l&&box.r>box.l){t.setAttribute('textLength',box.r-box.l);t.setAttribute('lengthAdjust','spacingAndGlyphs');}g.append(t);});
+            }
+            else if (s.tool === 'pen') {
                 g.append(svg('path',{d:inkPath(pts,w),fill:s.color,stroke:'none','fill-rule':'nonzero'}));
             }
             else if (s.tool === 'highlight') {
@@ -1048,7 +1058,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             const unsafe=/^(SCRIPT|IFRAME|OBJECT|EMBED|VIDEO|AUDIO|CANVAS|INPUT|TEXTAREA|SELECT|FORM|LINK|STYLE)$/i;
             const excluded=new Set();
             // Whole-page snapshot excludes only engine UI, non-rendered nodes and executable resources.
-            const skip='.yja-edge-tab,.yja-ui,.yja-diagnostic,.yja-layer,.yja-board-nav,.yja-output-dialog,.yja-print-root,.yja-sync-panel,script,style,link,template';
+            const skip='.yja-text-dialog,.yja-edge-tab,.yja-ui,.yja-diagnostic,.yja-layer,.yja-board-nav,.yja-output-dialog,.yja-print-root,.yja-sync-panel,script,style,link,template';
             const props='display position box-sizing width height min-width min-height max-width max-height margin margin-top margin-right margin-bottom margin-left padding padding-top padding-right padding-bottom padding-left border border-top border-right border-bottom border-left border-radius background-color background-image background-size background-position background-repeat color font-family font-size font-weight font-style line-height letter-spacing text-align text-decoration white-space overflow-wrap word-break vertical-align overflow overflow-x overflow-y opacity flex flex-direction flex-wrap justify-content align-items gap row-gap column-gap grid-template-columns grid-template-rows grid-column grid-row list-style-type list-style-position table-layout border-collapse border-spacing text-anchor dominant-baseline fill fill-opacity stroke stroke-width stroke-opacity stroke-linecap stroke-linejoin stroke-dasharray marker-start marker-mid marker-end transform transform-origin'.split(' ');
             for(let i=0;i<src.length;i++){
                 const a=src[i],b=dst[i],tag=a.localName.toLowerCase();
@@ -1189,12 +1199,39 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
                     if(sweptHit(s.tool,pts,s.width,prev,[x,y])){live.ids.add(s.id);const entry=nodeCache.get(s.id);if(entry)entry.node.style.visibility='hidden';}}
             }
         }
+        const textCanvas=el('canvas'),textContext=textCanvas.getContext('2d');
+        function measureText(t,size){if(!textContext)return t.length*size;textContext.font=size+'px system-ui,sans-serif';return textContext.measureText(t).width;}
+        let noteSize=18;
+        function openText(e,anchor){
+            if(document.querySelector('.yja-text-dialog'))return;
+            const start=localPoint(e,anchor),layout=layoutOf(anchor),ink=styleFor(presetKey(tool)||lastInk),paint=ink.color,alpha=ink.opacity??defaultOpacity(lastInk);
+            const dialog=el('dialog','yja-text-dialog');dialog.setAttribute('aria-label','텍스트 주석');
+            const form=el('form');dialog.append(form);form.append(el('strong','','텍스트 주석'));
+            const area=el('textarea');area.rows=4;area.maxLength=500;area.placeholder='주석을 입력하세요';area.setAttribute('aria-label','주석 내용');form.append(area);
+            const row=el('div','yja-text-actions'),label=el('label','','글자 크기 '),size=el('select');size.setAttribute('aria-label','주석 글자 크기');
+            for(const n of [12,14,16,18,20,24,28,32]){const opt=el('option','',n+'px');opt.value=String(n);size.append(opt);}size.value=String(noteSize);label.append(size);row.append(label);
+            const cancel=el('button','','취소');cancel.type='button';cancel.onclick=()=>dialog.close();const ok=el('button','','삽입');ok.type='submit';row.append(cancel,ok);form.append(row);
+            const msg=el('div','yja-text-message','Ctrl+Enter 삽입 · Esc 취소 · 최대 8줄');msg.setAttribute('role','status');form.append(msg);
+            document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+            form.addEventListener('submit',ev=>{ev.preventDefault();const text=area.value.replace(/\r\n?/g,'\n').trim();if(!validText(text)){msg.textContent='내용을 입력하세요 (최대 500자, 8줄).';return;}
+                if(!sameLayout(layout,layoutOf(anchor))||!anchors.has(anchor)){msg.textContent='교재 배치가 변경되었습니다. 취소 후 다시 위치를 선택하세요.';return;}
+                const g=geometry(anchor),fs=Number(size.value),lines=text.split('\n'),w=Math.max(fs,...lines.map(t=>measureText(t,fs)))+2,h=fs*1.25*lines.length;
+                if(w>g.w||h>g.h){msg.textContent='주석이 너무 큽니다. 글자 크기 또는 내용을 줄이세요.';return;}
+                if(strokes.length>=LIMIT||strokes.reduce((n,s)=>n+s.points.length,0)+2>TOTAL_POINTS){msg.textContent='판서 한도 도달 · 내보내기 후 정리';return;}
+                const x=Math.max(0,Math.min(start[0]*g.w,g.w-w)),y=Math.max(0,Math.min(start[1]*g.h,g.h-h));
+                const item={id:globalThis.crypto?.randomUUID?.()||Date.now()+'-'+Math.random(),anchor,tool:'text',color:paint,width:1,opacity:alpha,text,layout,points:[[x/g.w,y/g.h,1],[(x+w)/g.w,(y+h)/g.h,1]]};
+                noteSize=fs;dialog.close();commit([...strokes,bindPageStroke(item)]);
+            });
+            area.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&(ev.ctrlKey||ev.metaKey)&&!ev.isComposing){ev.preventDefault();form.requestSubmit();}});
+            dialog.showModal();area.focus();
+        }
         function down(e) {
             // A fresh press from the same pointer cannot continue an orphaned gesture.
             if(live?.captureLost&&live.pointer===e.pointerId&&live.pointerType===e.pointerType&&canDraw(e.pointerType,e.button,inputMode,barrelErase))finish(false);
             if(tool==='select'||navHeld||!visible||live||!canDraw(e.pointerType,e.button,inputMode,barrelErase)){if(!live)recordInput(e,samplePressure(e.pointerType,e.pressure,pressure,mouseMock));return;}
             if(e.target?.closest?.('.yja-board-nav')||(pageEnabled&&protectedTarget(e)))return;const anchor=anchorAt(e);if(!anchor)return;
             e.preventDefault();e.stopPropagation();
+            if(tool==='text'&&e.button===0){openText(e,anchor);return;}
             let captureLost=false;
             // Capture is an optimization, not a prerequisite: window capture listeners track the accepted gesture.
             try{layer.setPointerCapture(e.pointerId);}catch{captureLost=true;}
@@ -1291,7 +1328,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         window.addEventListener('keydown', e => {
             // External reading mode must not steal the host's shortcuts. Activate a pen or focus our own toolbar first.
             if(external&&tool==='select'&&!e.target.closest?.('.yja-ui'))return;
-            if (e.defaultPrevented || e.isComposing || e.keyCode===229 || e.altKey || (e.ctrlKey&&e.metaKey)) return; if (e.target.closest?.('.yja-output-dialog,input,textarea,select,[contenteditable],[role=textbox],[role=combobox],[role=slider],[role=spinbutton],[role=menu],[role=tablist]'))
+            if (e.defaultPrevented || e.isComposing || e.keyCode===229 || e.altKey || (e.ctrlKey&&e.metaKey)) return; if (e.target.closest?.('.yja-text-dialog,.yja-output-dialog,input,textarea,select,[contenteditable],[role=textbox],[role=combobox],[role=slider],[role=spinbutton],[role=menu],[role=tablist]'))
             return; if (e.key === 'Escape') {
             if(e.repeat){e.preventDefault();return;}
             // Cancel only the current action first; do not unexpectedly leave the ink tool.
@@ -1299,7 +1336,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             if(navHeld){setNavigation(false);e.preventDefault();return;}
             if(shapeMode()!=='free'){setTool(lastInk);e.preventDefault();return;}
             if(['edit','lasso'].includes(tool)&&selected.size){selected.clear();drawSelection();refresh();e.preventDefault();return;}
-            if(['eraser','laser','edit','lasso'].includes(tool)){setTool(lastInk);e.preventDefault();return;}
+            if(['eraser','laser','edit','lasso','text'].includes(tool)){setTool(lastInk);e.preventDefault();return;}
             if(!more.hidden){setMore(false);e.preventDefault();return;}
             setTool('select');
             return;
@@ -1307,7 +1344,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         if(e.code==='Space' && tool!=='select' && visible && !e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.target.closest?.('a,button')){e.preventDefault();if(!e.repeat)setNavigation(true);return;}
         // v28: letter shortcuts also work after keyboard activation of our own toolbar buttons.
         // Space/Enter retain native button activation; other site controls are not hijacked.
-        if (!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey&&!e.repeat&&(!e.target.closest?.('a,button')||e.target.closest?.('.yja-ui button'))) { if(/^[1-4]$/.test(e.key)){e.preventDefault();choosePreset(Number(e.key)-1);return;}const k=e.key.toLowerCase(),shape=shapeShortcuts[k],t=shortcuts[k];if(shape){e.preventDefault();shapeTool(shape);return;}if(t){e.preventDefault();if(['eraser','laser','edit','lasso'].includes(t))toggleTransient(t);else setTool(t);return;} }
+        if (!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey&&!e.repeat&&(!e.target.closest?.('a,button')||e.target.closest?.('.yja-ui button'))) { if(/^[1-4]$/.test(e.key)){e.preventDefault();choosePreset(Number(e.key)-1);return;}const k=e.key.toLowerCase(),shape=shapeShortcuts[k],t=shortcuts[k];if(shape){e.preventDefault();shapeTool(shape);return;}if(t){e.preventDefault();if(['eraser','laser','edit','lasso','text'].includes(t))toggleTransient(t);else setTool(t);return;} }
         if(e.key==='Delete'&&['edit','lasso'].includes(tool)&&!e.target.closest?.('a,button')){e.preventDefault();deleteSelection();return;}
         if (tool === 'select')
             return; if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
@@ -1413,8 +1450,10 @@ const edgeCss = `
 .yja-ui[data-yja-edge-open] .yja-preset-status,.yja-ui[data-yja-edge-open] .yja-help,.yja-ui[data-yja-edge-open] .yja-status{color:#dbe5f2!important}
 .yja-ui[data-yja-edge-open] [data-warn=true]{color:#fde68a!important}
 @media (pointer:fine){
-.yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-topbar{gap:2px;padding-bottom:3px}
-.yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-topbar button{min-height:24px;min-width:0;display:flex;align-items:center;justify-content:center;gap:3px;padding:2px;font-size:11px}
+.yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-topbar{gap:1px;padding-bottom:1px}
+.yja-ui[data-yja-edge-open]:is([data-dock=right],[data-dock=left]){top:4px;transform:none;max-height:calc(100dvh - 8px);align-content:start}
+.yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-topbar .yja-mode-readout{font-size:9px;padding:1px;line-height:1.1}
+.yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-topbar button{min-height:20px;min-width:0;display:flex;align-items:center;justify-content:center;gap:3px;padding:2px;font-size:11px}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-mode-readout{padding:2px;line-height:1.2}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-group{gap:3px}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-sep{padding-top:3px}
@@ -1430,7 +1469,10 @@ const edgeCss = `
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-scope-group button{grid-column:1/-1}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-preset{min-height:28px}
 }
-@media print{.yja-edge-tab{display:none!important}}
+.yja-text-dialog{box-sizing:border-box;width:min(420px,90vw);border:1px solid #526479;border-radius:10px;padding:16px;background:#182535;color:#f1f5f9;font:14px/1.5 system-ui,sans-serif;z-index:2147483002}
+.yja-text-dialog::backdrop{background:#0003}.yja-text-dialog form{display:grid;gap:10px}.yja-text-dialog textarea{box-sizing:border-box;width:100%;resize:vertical;min-height:80px;font:16px/1.5 system-ui,sans-serif;color:#142e50;background:white;border:1px solid #aab4bf;border-radius:5px;padding:8px}
+.yja-text-dialog .yja-text-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.yja-text-dialog label{color:#f1f5f9}.yja-text-dialog button,.yja-text-dialog select{font:inherit;color:#f1f5f9;background:#34475c;border:1px solid #789;border-radius:5px;padding:6px}.yja-text-dialog button[type=submit]{background:#dbeafe;color:#142e50}.yja-text-message{font-size:12px;color:#f1f5f9}
+@media print{.yja-edge-tab,.yja-text-dialog{display:none!important}}
 `;
 let edgeDrawer = null;
 function installEdgeDrawer() {
@@ -1521,7 +1563,7 @@ async function toggle() {
   } finally { busy = false; }
 }
 window.addEventListener('keydown', event => {
-  if (failed || bookmarkBridge.state() !== 'ready') return;
+  if (failed || bookmarkBridge.state() !== 'ready' || document.querySelector('.yja-text-dialog')) return;
   if (event.defaultPrevented || event.repeat || event.isComposing || event.ctrlKey || event.metaKey) return;
   const original = event.altKey && event.shiftKey && event.code === 'KeyY';
   const alternate = !event.altKey && !event.shiftKey && event.code === 'F8';
@@ -1530,6 +1572,6 @@ window.addEventListener('keydown', event => {
   event.preventDefault();
   toggle();
 }, true);
-Object.defineProperty(window, '__YJA_BOOKMARK_V1', {value: Object.freeze({version:'42.0.0',toggle}),configurable:false});
+Object.defineProperty(window, '__YJA_BOOKMARK_V1', {value: Object.freeze({version:'43.0.0',toggle}),configurable:false});
 toggle();
 })();
