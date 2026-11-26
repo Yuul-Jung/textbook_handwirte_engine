@@ -1,0 +1,33 @@
+node --check: exit 0
+Tested Git blob: ed46e1f5259e8ad8cb42b08101e1e28eecaaf4e2
+Chromium Playwright local synthetic lesson (mock storage):
+test_color.py: 23 PASS, exit 0
+test_layout.py: 11 PASS, exit 0
+test_v42.py: 15 PASS, exit 0
+test_inline.py: 26 PASS, exit 0
+PASS inline opens at click
+PASS caret focused
+PASS no modal
+PASS outside commit
+PASS selected automatically
+PASS local actions
+PASS plain text
+PASS host unchanged
+PASS edit in place
+PASS drag moves same note
+PASS double click edit
+PASS cancel retains text
+PASS local delete
+PASS undo restores
+PASS redo deletes
+PASS empty edit deletes box
+PASS empty delete undo
+PASS composition protects commit (synthetic events)
+PASS wrapped text
+PASS pen still works
+PASS reload source and old marks
+PASS corner resize increases note bounds
+PASS keyboard Delete only selected note
+PASS resize and deletion undo retain notes
+PASS Backspace deletes selected box only
+PASS no errors

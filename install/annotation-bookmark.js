@@ -788,8 +788,8 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         function refreshRecovery(){recovery.hidden=!saveFailed;retry.disabled=storageBlocked;rawBackup.hidden=corruptRaw===null;recoveryText.textContent=storageBlocked?(corruptRaw!==null?'오류 원본 백업 · 정상 JSON 불러오기 가능':'저장 충돌/읽기 오류 · 백업 후 새로고침'):'저장 실패 · 재시도 또는 백업';}
         function payload() { return { schema: SCHEMA, course, chapter, revision, strokes, boards, activeBoard }; }
         function validate(o) { if (!o || o.schema !== SCHEMA || o.course !== course || o.chapter !== chapter || o.revision !== revision || !Array.isArray(o.strokes) || o.strokes.length > LIMIT)
-            throw Error('스키마 또는 교재/장/개정 ID 불일치'); const pageData=validateBoards(o.boards,o.activeBoard),validBoardIds=new Set(pageData.boards.map(b=>b.id)); let total = 0; const ids = new Set(); const validated=o.strokes.map(s => { if (!s || typeof s.id !== 'string' || s.id.length > 100 || ids.has(s.id) || !(isBoardId(s.anchor)?validBoardIds.has(s.anchor):anchors.has(s.anchor)) || !drawTools.includes(s.tool) || (s.tool==='text'&&!validText(s.text)) || !validColor(s.color) || (s.opacity!==undefined&&!validOpacity(s.opacity)) || !Number.isFinite(s.width) || s.width < 1 || s.width > 12 || !Array.isArray(s.layout) || s.layout.length < 2 || s.layout.length > 100 || !s.layout.every(Number.isFinite) || !Array.isArray(s.points) || !s.points.length || s.points.length > POINT_LIMIT || (total += s.points.length) > TOTAL_POINTS || (!['pen', 'highlight'].includes(s.tool) && s.points.length !== 2))
-            throw Error('잘못된 판서 데이터'); ids.add(s.id); return { id: s.id, anchor: s.anchor, tool: s.tool, color: s.color, width: s.width, ...(s.opacity===undefined?{}:{opacity:s.opacity}), layout: s.layout.slice(), smooth: s.smooth === true, ...(s.tool==='text'?{text:s.text}:{}), points: s.points.map(p => { if (!Array.isArray(p) || p.length !== 3 || !p.every(Number.isFinite) || p[0] < 0 || p[0] > 1 || p[1] < 0 || p[1] > 1 || p[2] < 0 || p[2] > 1)
+            throw Error('스키마 또는 교재/장/개정 ID 불일치'); const pageData=validateBoards(o.boards,o.activeBoard),validBoardIds=new Set(pageData.boards.map(b=>b.id)); let total = 0; const ids = new Set(); const validated=o.strokes.map(s => { if (!s || typeof s.id !== 'string' || s.id.length > 100 || ids.has(s.id) || !(isBoardId(s.anchor)?validBoardIds.has(s.anchor):anchors.has(s.anchor)) || !drawTools.includes(s.tool) || (s.tool==='text'&&(!validText(s.text)||(s.sourceText!==undefined&&!validText(s.sourceText)))) || !validColor(s.color) || (s.opacity!==undefined&&!validOpacity(s.opacity)) || !Number.isFinite(s.width) || s.width < 1 || s.width > 12 || !Array.isArray(s.layout) || s.layout.length < 2 || s.layout.length > 100 || !s.layout.every(Number.isFinite) || !Array.isArray(s.points) || !s.points.length || s.points.length > POINT_LIMIT || (total += s.points.length) > TOTAL_POINTS || (!['pen', 'highlight'].includes(s.tool) && s.points.length !== 2))
+            throw Error('잘못된 판서 데이터'); ids.add(s.id); return { id: s.id, anchor: s.anchor, tool: s.tool, color: s.color, width: s.width, ...(s.opacity===undefined?{}:{opacity:s.opacity}), layout: s.layout.slice(), smooth: s.smooth === true, ...(s.tool==='text'?{text:s.text,...(s.sourceText===undefined?{}:{sourceText:s.sourceText})}:{}), points: s.points.map(p => { if (!Array.isArray(p) || p.length !== 3 || !p.every(Number.isFinite) || p[0] < 0 || p[0] > 1 || p[1] < 0 || p[1] > 1 || p[2] < 0 || p[2] > 1)
                 throw Error('잘못된 좌표'); return p.slice(); }) }; }); return {...pageData,strokes:validated}; }
         // v12: retain the exact loaded value; never silently replace a changed or corrupt record.
         let storedRaw = null, corruptRaw = null;
@@ -841,7 +841,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         function rectOf(a){return a===PAGE_ANCHOR?pageRect():anchors.get(a).getBoundingClientRect();}
         function geometry(anchor) { const h = pageEnabled?pageRect():layer.getBoundingClientRect(), r = rectOf(anchor); return { x: r.left - h.left, y: r.top - h.top, w: r.width, h: r.height }; }
         function localPoint(e, a, previous=null, ending=false,r=rectOf(a),refreshNow=true) { const p = samplePressure(e.pointerType,e.pressure,pressure,mouseMock,previous,ending); recordInput(e,p,refreshNow); return [clamp((e.clientX - r.left) / Math.max(r.width, 1)), clamp((e.clientY - r.top) / Math.max(r.height, 1)), p]; }
-        function protectedTarget(e){return !!e.target?.closest?.('.yja-text-dialog,.yja-ui,.yja-diagnostic,.yja-board-nav,.yja-output-dialog,.yja-sync-panel,nav,button,input,select,textarea,a,summary,[contenteditable=true]'+(external?',label,[contenteditable],[role=button],[role=link],[role=checkbox],[role=menuitem],[role=tab],[role=slider],[role=textbox]':''));}
+        function protectedTarget(e){return !!e.target?.closest?.('.yja-note-actions,.yja-text-dialog,.yja-ui,.yja-diagnostic,.yja-board-nav,.yja-output-dialog,.yja-sync-panel,nav,button,input,select,textarea,a,summary,[contenteditable=true]'+(external?',label,[contenteditable],[role=button],[role=link],[role=checkbox],[role=menuitem],[role=tab],[role=slider],[role=textbox]':''));}
         function anchorAt(e) { const section=anchorId(sections.find(a => { const r = a.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; })); if(isBoardId(section))return section; if(pageEnabled&&pageMode){const r=pageRect();if(e.clientX>=r.left&&e.clientX<=r.left+r.width&&e.clientY>=r.top&&e.clientY<=r.top+r.height)return PAGE_ANCHOR;} return section; }
         // Layout signature: fail closed rather than place a mark over the wrong text.
         function layoutOf(a) {
@@ -1060,7 +1060,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             const unsafe=/^(SCRIPT|IFRAME|OBJECT|EMBED|VIDEO|AUDIO|CANVAS|INPUT|TEXTAREA|SELECT|FORM|LINK|STYLE)$/i;
             const excluded=new Set();
             // Whole-page snapshot excludes only engine UI, non-rendered nodes and executable resources.
-            const skip='.yja-text-dialog,.yja-edge-tab,.yja-ui,.yja-diagnostic,.yja-layer,.yja-board-nav,.yja-output-dialog,.yja-print-root,.yja-sync-panel,script,style,link,template';
+            const skip='.yja-note-actions,.yja-text-dialog,.yja-edge-tab,.yja-ui,.yja-diagnostic,.yja-layer,.yja-board-nav,.yja-output-dialog,.yja-print-root,.yja-sync-panel,script,style,link,template';
             const props='display position box-sizing width height min-width min-height max-width max-height margin margin-top margin-right margin-bottom margin-left padding padding-top padding-right padding-bottom padding-left border border-top border-right border-bottom border-left border-radius background-color background-image background-size background-position background-repeat color font-family font-size font-weight font-style line-height letter-spacing text-align text-decoration white-space overflow-wrap word-break vertical-align overflow overflow-x overflow-y opacity flex flex-direction flex-wrap justify-content align-items gap row-gap column-gap grid-template-columns grid-template-rows grid-column grid-row list-style-type list-style-position table-layout border-collapse border-spacing text-anchor dominant-baseline fill fill-opacity stroke stroke-width stroke-opacity stroke-linecap stroke-linejoin stroke-dasharray marker-start marker-mid marker-end transform transform-origin'.split(' ');
             for(let i=0;i<src.length;i++){
                 const a=src[i],b=dst[i],tag=a.localName.toLowerCase();
@@ -1112,13 +1112,14 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         function handles(b){return [[b.l,b.t],[b.r,b.t],[b.r,b.b],[b.l,b.b]];}
         function drawSelection(){
             layer.querySelector('[data-yja-selection]')?.remove();
+            noteActions?.remove();noteActions=null;
             if(!['edit','lasso'].includes(tool)||!visible||navHeld||!selected.size)return;
             const items=live?.transform?.next||selectedItems();
             if(items.length!==selected.size){selected.clear();return;}
             const b=selectionBox(items),g=svg('g',{'data-yja-selection':'','data-count':items.length,'pointer-events':'none'});
             g.append(svg('rect',{x:b.l,y:b.t,width:b.r-b.l,height:b.b-b.t,fill:'none',stroke:'#1764d2','stroke-width':1.5,'stroke-dasharray':'5 3'}));
             if(b.resizable)handles(b).forEach(([x,y],i)=>g.append(svg('circle',{cx:x,cy:y,r:6,fill:'#fff',stroke:'#1764d2','stroke-width':2,'data-yja-handle':i})));
-            layer.append(g);
+            layer.append(g);showNoteActions(items);
         }
         function editDown(e,anchor){
             const r=layer.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
@@ -1166,7 +1167,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             for(const s of strokes){if(!matches(s,cache)){if(!(isBoardId(s.anchor)&&(board.hidden||s.anchor!==activeBoard)))layoutHidden++;continue;}
                 const item=previews.get(s.id)||s,g=strokeGeometry(item,cache)||geometry(item.anchor),k=JSON.stringify([g.x,g.y,g.w,g.h]);let entry=nodeCache.get(s.id);
                 if(!entry||entry.item!==item||entry.k!==k){const node=graphic(item,g);if(entry)entry.node.remove();entry={item,k,node};nodeCache.set(s.id,entry);}
-                const vis=live?.ids.has(s.id)?'hidden':'';if(entry.node.style.visibility!==vis)entry.node.style.visibility=vis;shown.push(entry.node);keep.add(s.id);
+                const vis=live?.ids.has(s.id)||textDraft?.id===s.id?'hidden':'';if(entry.node.style.visibility!==vis)entry.node.style.visibility=vis;shown.push(entry.node);keep.add(s.id);
             }
             for(const [id,entry] of nodeCache)if(!keep.has(id)){entry.node.remove();nodeCache.delete(id);}
             // Preserve document z-order including undo/redo and imported order.
@@ -1203,37 +1204,66 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         }
         const textCanvas=el('canvas'),textContext=textCanvas.getContext('2d');
         function measureText(t,size){if(!textContext)return t.length*size;textContext.font=size+'px system-ui,sans-serif';return textContext.measureText(t).width;}
-        let noteSize=18;
-        function openText(e,anchor){
-            if(document.querySelector('.yja-text-dialog'))return;
-            const start=localPoint(e,anchor),layout=layoutOf(anchor),ink=styleFor(presetKey(tool)||lastInk),paint=ink.color,alpha=ink.opacity??defaultOpacity(lastInk);
-            const dialog=el('dialog','yja-text-dialog');dialog.setAttribute('aria-label','텍스트 주석');
-            const form=el('form');dialog.append(form);form.append(el('strong','','텍스트 주석'));
-            const area=el('textarea');area.rows=4;area.maxLength=500;area.placeholder='주석을 입력하세요';area.setAttribute('aria-label','주석 내용');form.append(area);
-            const row=el('div','yja-text-actions'),label=el('label','','글자 크기 '),size=el('select');size.setAttribute('aria-label','주석 글자 크기');
-            for(const n of [12,14,16,18,20,24,28,32]){const opt=el('option','',n+'px');opt.value=String(n);size.append(opt);}size.value=String(noteSize);label.append(size);row.append(label);
-            const cancel=el('button','','취소');cancel.type='button';cancel.onclick=()=>dialog.close();const ok=el('button','','삽입');ok.type='submit';row.append(cancel,ok);form.append(row);
-            const msg=el('div','yja-text-message','Ctrl+Enter 삽입 · Esc 취소 · 최대 8줄');msg.setAttribute('role','status');form.append(msg);
-            document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove(),{once:true});
-            form.addEventListener('submit',ev=>{ev.preventDefault();const text=area.value.replace(/\r\n?/g,'\n').trim();if(!validText(text)){msg.textContent='내용을 입력하세요 (최대 500자, 8줄).';return;}
-                if(!sameLayout(layout,layoutOf(anchor))||!anchors.has(anchor)){msg.textContent='교재 배치가 변경되었습니다. 취소 후 다시 위치를 선택하세요.';return;}
-                const g=geometry(anchor),fs=Number(size.value),lines=text.split('\n'),w=Math.max(fs,...lines.map(t=>measureText(t,fs)))+2,h=fs*1.25*lines.length;
-                if(w>g.w||h>g.h){msg.textContent='주석이 너무 큽니다. 글자 크기 또는 내용을 줄이세요.';return;}
-                if(strokes.length>=LIMIT||strokes.reduce((n,s)=>n+s.points.length,0)+2>TOTAL_POINTS){msg.textContent='판서 한도 도달 · 내보내기 후 정리';return;}
-                const x=Math.max(0,Math.min(start[0]*g.w,g.w-w)),y=Math.max(0,Math.min(start[1]*g.h,g.h-h));
-                const item={id:globalThis.crypto?.randomUUID?.()||Date.now()+'-'+Math.random(),anchor,tool:'text',color:paint,width:1,opacity:alpha,text,layout,points:[[x/g.w,y/g.h,1],[(x+w)/g.w,(y+h)/g.h,1]]};
-                noteSize=fs;dialog.close();commit([...strokes,bindPageStroke(item)]);
-            });
-            area.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&(ev.ctrlKey||ev.metaKey)&&!ev.isComposing){ev.preventDefault();form.requestSubmit();}});
-            dialog.showModal();area.focus();
+        let noteSize=18, textDraft=null, noteActions=null;
+        function textAt(e){const r=layer.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,cache=new Map();return strokes.slice().reverse().find(s=>s.tool==='text'&&matches(s,cache)&&strokeHit('text',xy(s,strokeGeometry(s,cache)),1,x,y,3));}
+        function closeText(cancel=false){return !textDraft||textDraft.close(cancel);}
+        function showNoteActions(items){
+            noteActions?.remove();noteActions=null;
+            if(textDraft||!visible||navHeld||live?.transform||tool!=='edit'||items.length!==1||items[0].tool!=='text')return;
+            const item=items[0],box=selectionBox(items),r=layer.getBoundingClientRect();
+            if(box.b+r.top<0||box.t+r.top>innerHeight)return;
+            const bar=el('div','yja-note-actions');bar.setAttribute('role','group');bar.setAttribute('aria-label','선택 주석 조작');
+            const action=(name,fn)=>{const b=el('button','',name);b.type='button';b.addEventListener('click',fn);bar.append(b);};
+            action('수정',()=>openText(null,item.anchor,item));action('삭제',()=>deleteSelection());
+            document.body.append(bar);noteActions=bar;const w=bar.offsetWidth,h=bar.offsetHeight;
+            bar.style.left=Math.max(4,Math.min(innerWidth-w-4,r.left+box.l))+'px';bar.style.top=Math.max(4,Math.min(innerHeight-h-4,r.top+box.t-h-6<4?r.top+box.b+6:r.top+box.t-h-6))+'px';
+        }
+        function openText(e,anchor,existing=null){
+            if(textDraft)return;
+            const r=rectOf(anchor),g=geometry(anchor),oldBox=existing?pixelBounds(xy(existing,strokeGeometry(existing))):null;
+            const start=oldBox?[(oldBox.l-g.x)/g.w,(oldBox.t-g.y)/g.h]:localPoint(e,anchor),layout=layoutOf(anchor);
+            const ink=styleFor(presetKey(tool)||lastInk),paint=existing?.color||ink.color,alpha=existing?.opacity??(existing?1:ink.opacity??defaultOpacity(lastInk));
+            const editor=el('div','yja-text-dialog yja-inline-note');editor.setAttribute('role','group');editor.setAttribute('aria-label','텍스트 주석 직접 편집');
+            const area=el('textarea');area.rows=1;area.maxLength=500;area.placeholder='주석 입력';area.setAttribute('aria-label','주석 내용');area.value=existing?.sourceText??existing?.text??'';editor.append(area);
+            const bar=el('div','yja-text-actions'),size=el('select');size.setAttribute('aria-label','주석 글자 크기');
+            const initial=existing?Math.max(1,Math.round((oldBox.b-oldBox.t)/existing.text.split('\n').length/1.25)):noteSize;
+            for(const n of [...new Set([12,14,16,18,20,24,28,32,initial])].sort((a,b)=>a-b)){const opt=el('option','',n+'px');opt.value=String(n);size.append(opt);}size.value=String(initial);bar.append(size);
+            const action=(name,fn)=>{const b=el('button','',name);b.type='button';b.addEventListener('click',fn);bar.append(b);};
+            action('완료',()=>closeText());action('취소',()=>closeText(true));editor.append(bar);
+            const msg=el('div','yja-text-message','');msg.setAttribute('role','status');editor.append(msg);
+            document.body.append(editor);noteActions?.remove();noteActions=null;
+            let composing=false;
+            const widthPx=Math.max(24,Math.min(g.w,oldBox?Math.max(oldBox.r-oldBox.l,120):280,Math.max(24,innerWidth-24)));
+            const wrap=(raw,fs)=>{const result=[];for(const line of raw.split('\n')){let cur='';for(const ch of line){if(cur&&measureText(cur+ch,fs)>widthPx-10){result.push(cur);cur='';}cur+=ch;}result.push(cur);}return result;};
+            function position(){const a=rectOf(anchor);editor.style.left=Math.max(4,Math.min(innerWidth-widthPx-8,a.left+start[0]*a.width))+'px';editor.style.top=Math.max(4,Math.min(innerHeight-80,a.top+start[1]*a.height))+'px';}
+            function update(){const fs=Number(size.value);area.style.fontSize=fs+'px';const rgb=paint.slice(1).match(/../g).map(v=>parseInt(v,16)/255),lum=rgb.reduce((n,v,i)=>n+[.2126,.7152,.0722][i]*(v<=.04045?v/12.92:((v+.055)/1.055)**2.4),0);area.style.setProperty('--yja-note-color',paint);area.style.setProperty('--yja-note-bg',lum>.179?'#15171c':'#ffffff');area.style.width=widthPx+'px';area.style.height='auto';area.style.height=Math.min(240,Math.max(fs*1.25+10,area.scrollHeight+2))+'px';position();}
+            function dispose(){textDraft=null;editor.remove();window.removeEventListener('scroll',position,true);window.removeEventListener('resize',position);}
+            function close(cancel){if(composing&&!cancel)return false;
+                const raw=area.value.replace(/\r\n?/g,'\n').trim();
+                if(cancel){dispose();render();return true;}
+                if(!raw){dispose();if(existing){selected.clear();commit(strokes.filter(s=>s.id!==existing.id));}else render();return true;}
+                if(!validText(raw)){msg.textContent='최대 500자, 8줄까지 입력할 수 있습니다.';return false;}
+                if(!anchors.has(anchor)||!sameLayout(layout,layoutOf(anchor))||(existing&&!strokes.includes(existing))){msg.textContent='교재 또는 주석이 변경되었습니다. 취소 후 다시 선택하세요.';return false;}
+                const fs=Number(size.value),lines=wrap(raw,fs),text=lines.join('\n'),now=geometry(anchor),w=Math.max(fs,...lines.map(t=>measureText(t,fs)))+2,h=fs*1.25*lines.length;
+                if(!validText(text)||w>now.w||h>now.h){msg.textContent='주석이 너무 큽니다. 글자 크기 또는 내용을 줄이세요.';return false;}
+                if(!existing&&(strokes.length>=LIMIT||strokes.reduce((n,s)=>n+s.points.length,0)+2>TOTAL_POINTS)){msg.textContent='판서 한도 도달';return false;}
+                const x=Math.max(0,Math.min(start[0]*now.w,now.w-w)),y=Math.max(0,Math.min(start[1]*now.h,now.h-h));
+                const item=bindPageStroke({id:existing?.id||globalThis.crypto?.randomUUID?.()||Date.now()+'-'+Math.random(),anchor,tool:'text',color:paint,width:1,opacity:alpha,text,sourceText:raw,layout,points:[[x/now.w,y/now.h,1],[(x+w)/now.w,(y+h)/now.h,1]]});
+                noteSize=fs;dispose();setTool('edit');selected=new Set([item.id]);commit(existing?strokes.map(s=>s===existing?item:s):[...strokes,item]);return true;
+            }
+            textDraft={editor,id:existing?.id,close};area.addEventListener('input',update);size.addEventListener('change',update);
+            area.addEventListener('compositionstart',()=>{composing=true;});area.addEventListener('compositionend',()=>{composing=false;update();});
+            editor.addEventListener('keydown',ev=>{if(composing||ev.isComposing||ev.keyCode===229)return;if(ev.key==='Escape'){ev.preventDefault();ev.stopPropagation();close(true);}else if(ev.key==='Enter'&&(ev.ctrlKey||ev.metaKey)){ev.preventDefault();ev.stopPropagation();close(false);}});
+            window.addEventListener('scroll',position,true);window.addEventListener('resize',position);update();render();area.focus({preventScroll:true});if(existing)area.setSelectionRange(area.value.length,area.value.length);
         }
         function down(e) {
+            if(textDraft){if(textDraft.editor.contains(e.target))return;if(!closeText()){e.preventDefault();e.stopImmediatePropagation();return;}if(!protectedTarget(e)){e.preventDefault();e.stopImmediatePropagation();return;}}
             // A fresh press from the same pointer cannot continue an orphaned gesture.
             if(live?.captureLost&&live.pointer===e.pointerId&&live.pointerType===e.pointerType&&canDraw(e.pointerType,e.button,inputMode,barrelErase))finish(false);
             if(tool==='select'||navHeld||!visible||live||!canDraw(e.pointerType,e.button,inputMode,barrelErase)){if(!live)recordInput(e,samplePressure(e.pointerType,e.pressure,pressure,mouseMock));return;}
             if(e.target?.closest?.('.yja-board-nav')||(pageEnabled&&protectedTarget(e)))return;const anchor=anchorAt(e);if(!anchor)return;
             e.preventDefault();e.stopPropagation();
-            if(tool==='text'&&e.button===0){openText(e,anchor);return;}
+            if(tool==='text'&&e.button===0){const item=textAt(e);openText(e,item?.anchor||anchor,item||null);return;}
             let captureLost=false;
             // Capture is an optimization, not a prerequisite: window capture listeners track the accepted gesture.
             try{layer.setPointerCapture(e.pointerId);}catch{captureLost=true;}
@@ -1306,6 +1336,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         } render(); }
         const inputRoot=pageEnabled?document:host;
         inputRoot.addEventListener('pointerdown',down,true);
+        inputRoot.addEventListener('dblclick',e=>{if(tool!=='edit'||!visible||navHeld||protectedTarget(e)||textDraft)return;const item=textAt(e);if(item){e.preventDefault();e.stopPropagation();openText(e,item.anchor,item);}},true);
         // In pen-only mode mouse targets the real HTML; prevent pen clicks activating links after drawing.
         inputRoot.addEventListener('click',e=>{if(!(pageEnabled&&protectedTarget(e))&&!e.target?.closest?.('.yja-board-nav')&&tool!=='select'&&!navHeld&&visible&&e.pointerType==='pen'&&anchorAt(e)){e.preventDefault();e.stopImmediatePropagation();}},true);
         inputRoot.addEventListener('contextmenu',e=>{if(!(pageEnabled&&protectedTarget(e))&&tool!=='select'&&!navHeld&&visible&&e.pointerType==='pen')e.preventDefault();},true);
@@ -1347,7 +1378,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         // v28: letter shortcuts also work after keyboard activation of our own toolbar buttons.
         // Space/Enter retain native button activation; other site controls are not hijacked.
         if (!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.shiftKey&&!e.repeat&&(!e.target.closest?.('a,button')||e.target.closest?.('.yja-ui button'))) { if(/^[1-4]$/.test(e.key)){e.preventDefault();choosePreset(Number(e.key)-1);return;}const k=e.key.toLowerCase(),shape=shapeShortcuts[k],t=shortcuts[k];if(shape){e.preventDefault();shapeTool(shape);return;}if(t){e.preventDefault();if(['eraser','laser','edit','lasso','text'].includes(t))toggleTransient(t);else setTool(t);return;} }
-        if(e.key==='Delete'&&['edit','lasso'].includes(tool)&&!e.target.closest?.('a,button')){e.preventDefault();deleteSelection();return;}
+        if((e.key==='Delete'||e.key==='Backspace')&&['edit','lasso'].includes(tool)&&selected.size&&(!e.target.closest?.('a,button')||e.target.closest?.('.yja-note-actions'))){e.preventDefault();deleteSelection();return;}
         if (tool === 'select')
             return; if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
             e.preventDefault();
@@ -1368,7 +1399,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         host.addEventListener('load',()=>{finish(false);schedule();},true);
         host.addEventListener('toggle',e=>{if(e.target instanceof HTMLDetailsElement){finish(false);schedule();}},true);
         window.addEventListener('resize', () => { finish(false); clearLaser(); if(ui.dataset.dock==='float'){const r=ui.getBoundingClientRect();place(r.left,r.top);} schedule(); });
-        window.addEventListener('scroll',()=>{if(live)finish(false);},{passive:true});
+        window.addEventListener('scroll',()=>{if(live)finish(false);if(noteActions)schedule();},{passive:true});
         document.fonts?.ready.then(schedule);
         host.addEventListener('scroll', e => { if (e.target !== host && e.target instanceof Element) {
             finish(false);
@@ -1503,6 +1534,13 @@ const edgeCss = `
 .yja-text-dialog button,.yja-text-dialog select{background:#383b42;color:#f5f5f7!important;border-color:#62656d;border-radius:6px}
 .yja-text-dialog button[type=submit]{background:#a9d3ff;color:#10273f!important;border-color:#79b8fb}
 .yja-text-dialog :is(button,select,textarea):focus-visible{outline:2px solid #9dceff;outline-offset:2px}
+/* v45: direct text editing and local note actions, no modal backdrop. */
+.yja-inline-note.yja-text-dialog{position:fixed;display:grid;gap:3px;width:max-content;max-width:calc(100vw - 8px);margin:0;padding:3px;border:1px solid #79b8fb;background:#24262c;border-radius:6px;box-shadow:0 4px 14px #0004;z-index:2147483003}
+.yja-inline-note textarea{display:block;box-sizing:border-box;margin:0;resize:none;min-height:0;padding:4px;line-height:1.25;overflow:auto;border:1px solid #79b8fb;border-radius:3px;white-space:pre-wrap;overflow-wrap:anywhere;font-family:system-ui,sans-serif;color:var(--yja-note-color,#20232a)!important;background:var(--yja-note-bg,#ffffff)!important;caret-color:currentColor}
+.yja-inline-note .yja-text-actions{gap:4px;justify-content:flex-end}.yja-inline-note .yja-text-actions :is(button,select){font:12px/1.2 system-ui,sans-serif;min-height:25px;padding:3px 7px}.yja-inline-note .yja-text-message:empty{display:none}
+.yja-note-actions{position:fixed;display:flex;gap:3px;background:#24262c;padding:3px;border:1px solid #62656d;border-radius:6px;z-index:2147483002;box-shadow:0 2px 10px #0003}
+.yja-note-actions button{font:12px/1.2 system-ui,sans-serif;color:#f5f5f7!important;background:#383b42;border:1px solid #62656d;border-radius:4px;padding:4px 8px;cursor:pointer;margin:0}.yja-note-actions button:hover{background:#51545b}.yja-note-actions button:focus-visible{outline:2px solid #9dceff}
+@media print{.yja-note-actions{display:none!important}}
 @media print{.yja-edge-tab,.yja-text-dialog{display:none!important}}
 `;
 let edgeDrawer = null;
@@ -1603,6 +1641,6 @@ window.addEventListener('keydown', event => {
   event.preventDefault();
   toggle();
 }, true);
-Object.defineProperty(window, '__YJA_BOOKMARK_V1', {value: Object.freeze({version:'44.0.0',toggle}),configurable:false});
+Object.defineProperty(window, '__YJA_BOOKMARK_V1', {value: Object.freeze({version:'45.0.0',toggle}),configurable:false});
 toggle();
 })();
