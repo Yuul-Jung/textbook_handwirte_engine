@@ -1,0 +1,83 @@
+{
+  "checks": [
+    {
+      "test": "test_core",
+      "passed": 32,
+      "exit": 0
+    },
+    {
+      "test": "test_grid",
+      "passed": 4,
+      "exit": 0
+    },
+    {
+      "test": "test_history",
+      "passed": 8,
+      "exit": 0
+    },
+    {
+      "test": "test_presets",
+      "passed": 4,
+      "exit": 0
+    },
+    {
+      "test": "test_shapes",
+      "passed": 19,
+      "exit": 0
+    },
+    {
+      "test": "test_state",
+      "passed": 10,
+      "exit": 0
+    },
+    {
+      "test": "php_test",
+      "passed": 51,
+      "exit": 0
+    },
+    {
+      "test": "server_test",
+      "passed": 66,
+      "exit": 0
+    },
+    {
+      "test": "test_adversarial_v25",
+      "passed": 16,
+      "exit": 0
+    },
+    {
+      "test": "test_page_ink",
+      "passed": 20,
+      "exit": 0
+    },
+    {
+      "test": "test_shape_ui",
+      "passed": 14,
+      "exit": 0
+    },
+    {
+      "test": "test_highlight_ui",
+      "passed": 20,
+      "exit": 0
+    },
+    {
+      "test": "test_ux_v24",
+      "passed": 68,
+      "exit": 0
+    },
+    {
+      "test": "test_wp_frame",
+      "passed": 9,
+      "exit": 0
+    },
+    {
+      "test": "test_server_browser",
+      "passed": 22,
+      "exit": 0
+    }
+  ],
+  "total_passed": 363,
+  "v24_independent_baseline": "6/15 (dependent move/undo combined as one failed check)",
+  "v25_independent": "16/16",
+  "native_storage": "blocked: file and HTTPS navigation ERR_BLOCKED_BY_ADMINISTRATOR"
+}

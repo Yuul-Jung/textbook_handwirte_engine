@@ -1,0 +1,42 @@
+{
+  "final_passed": 431,
+  "baseline_browser": {
+    "pass": 7,
+    "total": 12
+  },
+  "new_browser": {
+    "pass": 12,
+    "total": 12
+  },
+  "first_stress_attempt": {
+    "saved": 99,
+    "expected": 100,
+    "cause": "unresolved"
+  },
+  "serial_stress_runs": [
+    100,
+    100
+  ],
+  "tests": {
+    "test_plugin": 51,
+    "test_core": 32,
+    "test_presets": 4,
+    "test_shapes": 19,
+    "test_highlight_ui": 20,
+    "test_input_core": 18,
+    "test_page_ink": 20,
+    "test_input_stress": 7,
+    "test_ux_v24": 68,
+    "test_wp_frame": 9,
+    "test_server": 67,
+    "test_restore_v26": 6,
+    "test_shape_ui": 14,
+    "test_adversarial_v25": 16,
+    "test_input_browser": 12,
+    "test_coordinates_v26": 24,
+    "test_server_browser": 22,
+    "test_grid": 4,
+    "test_history": 8,
+    "test_state": 10
+  }
+}

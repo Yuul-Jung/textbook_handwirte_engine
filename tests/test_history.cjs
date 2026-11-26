@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict'),{makeHistory}=require('../yja-annotation-pilot/lesson/annotation/annotation.js');
+let n=0;function test(label,fn){fn();console.log('PASS '+label);n++;}
+const stroke=n=>({points:Array(n).fill([0,0,1])});const snap=(...strokes)=>({strokes});
+test('shared immutable strokes charged once',()=>{const h=makeHistory(40,100),a=stroke(60),b=stroke(30);h.record(snap(a),snap(a,b));assert.equal(h.stats().points,90);assert.equal(h.stats().objects,2);});
+test('distinct edited objects consume budget and oldest removed',()=>{const h=makeHistory(40,100),a=snap(stroke(60)),b=snap(stroke(60));h.record(a);h.record(b);assert.deepEqual(h.undo,[b]);assert.equal(h.stats().points,60);assert.equal(h.stats().evicted,1);});
+test('undo redo identity and new edit discards redo references',()=>{const h=makeHistory(),a=snap(stroke(4)),b=snap(stroke(8));h.record(a);assert.equal(h.step(false,b),a);assert.equal(h.step(true,a),b);assert.equal(h.step(false,b),a);h.record(a);assert.equal(h.redo.length,0);assert.equal(h.stats().points,4);});
+test('40 snapshot limit independent of points',()=>{const h=makeHistory();for(let i=0;i<70;i++)h.record(snap(stroke(1)));assert.equal(h.undo.length,40);assert.equal(h.stats().points,40);assert.equal(h.stats().evicted,30);});
+test('dense 150000 point replacements bounded',()=>{const h=makeHistory();for(let i=0;i<45;i++)h.record(snap(stroke(150000)));assert.equal(h.undo.length,2);assert.equal(h.stats().points,300000);assert.equal(h.stats().objects,2);});
+test('undo budget stays bounded while retaining immediate target',()=>{const h=makeHistory(40,100),a=snap(stroke(40)),b=snap(stroke(40)),c=snap(stroke(80));h.record(a,b);assert.equal(h.step(false,c),b);assert.equal(h.stats().points,80);assert.equal(h.step(true,b),c);assert.equal(h.stats().points,40);});
+test('two-stage shape undo preserves raw then absent',()=>{const h=makeHistory(),before=snap(),raw=snap(stroke(20)),corrected=snap(stroke(2));h.record(before,raw);assert.equal(h.step(false,corrected),raw);assert.equal(h.step(false,raw),before);assert.equal(h.step(true,before),raw);});
+test('explicit deletion clears undo redo references',()=>{const h=makeHistory();h.record(snap(stroke(4)));h.step(false,snap(stroke(8)));h.clear();assert.equal(h.stats().points,0);assert.equal(h.stats().objects,0);assert.equal(h.step(true,snap()),null);assert.equal(h.step(false,snap()),null);});
+console.log(`${n} history checks passed.`);
