@@ -1023,7 +1023,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             const unsafe=/^(SCRIPT|IFRAME|OBJECT|EMBED|VIDEO|AUDIO|CANVAS|INPUT|TEXTAREA|SELECT|FORM|LINK|STYLE)$/i;
             const excluded=new Set();
             // Whole-page snapshot excludes only engine UI, non-rendered nodes and executable resources.
-            const skip='.yja-ui,.yja-diagnostic,.yja-layer,.yja-board-nav,.yja-output-dialog,.yja-print-root,.yja-sync-panel,script,style,link,template';
+            const skip='.yja-edge-tab,.yja-ui,.yja-diagnostic,.yja-layer,.yja-board-nav,.yja-output-dialog,.yja-print-root,.yja-sync-panel,script,style,link,template';
             const props='display position box-sizing width height min-width min-height max-width max-height margin margin-top margin-right margin-bottom margin-left padding padding-top padding-right padding-bottom padding-left border border-top border-right border-bottom border-left border-radius background-color background-image background-size background-position background-repeat color font-family font-size font-weight font-style line-height letter-spacing text-align text-decoration white-space overflow-wrap word-break vertical-align overflow overflow-x overflow-y opacity flex flex-direction flex-wrap justify-content align-items gap row-gap column-gap grid-template-columns grid-template-rows grid-column grid-row list-style-type list-style-position table-layout border-collapse border-spacing text-anchor dominant-baseline fill fill-opacity stroke stroke-width stroke-opacity stroke-linecap stroke-linejoin stroke-dasharray marker-start marker-mid marker-end transform transform-origin'.split(' ');
             for(let i=0;i<src.length;i++){
                 const a=src[i],b=dst[i],tag=a.localName.toLowerCase();
@@ -1343,6 +1343,89 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
 
 }
 
+/* v38: edge drawer, independent of ink and lesson layout. */
+const edgeCss = `
+.yja-ui[data-yja-edge-open="false"]{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+.yja-edge-tab{all:initial;box-sizing:border-box;position:fixed;z-index:2147483001;right:0;top:50%;transform:translateY(-50%);width:10px;height:76px;padding:0;border:0;border-radius:5px 0 0 5px;background:#526479;opacity:.72;cursor:pointer;touch-action:manipulation;display:block;color:white}
+.yja-edge-tab::after{content:'';position:absolute;inset:27px 3px;border-radius:2px;background:currentColor}
+.yja-edge-tab:hover,.yja-edge-tab:focus-visible{opacity:1;background:#4635b1;outline:2px solid #fbbf24;outline-offset:-2px}
+.yja-edge-tab[hidden]{display:none!important}
+.yja-edge-tab[data-dock="left"]{right:auto;left:0;border-radius:0 5px 5px 0}
+.yja-edge-tab[data-dock="bottom"]{top:auto;bottom:0;right:auto;left:50%;transform:translateX(-50%);width:76px;height:10px;border-radius:5px 5px 0 0}
+.yja-edge-tab[data-dock="bottom"]::after{inset:3px 27px}
+@media (pointer:fine){
+.yja-ui[data-yja-edge-open]:not([data-dock=bottom]):not([data-collapsed=true]){width:136px;padding:5px;gap:4px}
+.yja-ui[data-yja-edge-open] button,.yja-ui[data-yja-edge-open] .yja-topbar button,.yja-ui[data-yja-edge-open] .yja-group button,.yja-ui[data-yja-edge-open] .yja-widths button,.yja-ui[data-yja-edge-open] .yja-preset,.yja-ui[data-yja-edge-open] .yja-recovery button{min-height:36px;min-width:0;padding:3px}
+.yja-ui[data-yja-edge-open] button svg{width:16px;height:16px}
+.yja-ui[data-yja-edge-open] .yja-preset svg{width:28px;height:15px}
+.yja-ui[data-yja-edge-open] button small{font-size:10px}
+.yja-ui[data-yja-edge-open] .yja-mode-readout{font-size:11px;padding:3px 2px}
+}
+@media print{.yja-edge-tab{display:none!important}}
+`;
+let edgeDrawer = null;
+function installEdgeDrawer() {
+  const panel = document.querySelector('.yja-ui');
+  if (!panel) throw Error('toolbar not found');
+  const tab = document.createElement('button');
+  tab.type = 'button'; tab.className = 'yja-edge-tab'; tab.title = '판서 도구 펼치기';
+  tab.setAttribute('aria-label','판서 도구 펼치기'); tab.setAttribute('aria-expanded','false');
+  document.body.append(tab);
+  let enabled = false, open = false, timer = 0, last = null, keyboard = false, held = null;
+  const clear = () => { clearTimeout(timer); timer = 0; };
+  const side = () => panel.dataset.dock === 'left' ? 'left' : panel.dataset.dock === 'bottom' ? 'bottom' : 'right';
+  const sync = () => { tab.dataset.dock = side(); };
+  const contains = target => !!target && (panel.contains(target) || tab.contains(target));
+  const focusHeld = () => keyboard && contains(document.activeElement) && document.activeElement !== tab;
+  function setOpen(value) {
+    clear(); open = enabled && value;
+    if (!open && panel.contains(document.activeElement)) document.activeElement.blur();
+    panel.dataset.yjaEdgeOpen = String(open); panel.inert = !open;
+    tab.setAttribute('aria-expanded',String(open));
+    tab.title = open ? '판서 도구 열림' : '판서 도구 펼치기';
+  }
+  function nearEdge(e) {
+    const w=document.documentElement.clientWidth,h=document.documentElement.clientHeight;
+    if (side()==='left') return e.clientX <= 10;
+    if (side()==='bottom') return e.clientY >= h-10;
+    return e.clientX >= w-10;
+  }
+  function later() {
+    if (!enabled || !open || timer || held!==null || focusHeld()) return;
+    timer = setTimeout(() => {
+      timer=0;
+      if (held!==null || focusHeld()) return;
+      if (last && (contains(document.elementFromPoint(last.x,last.y)) || last.edge)) return;
+      setOpen(false);
+    }, 400);
+  }
+  function move(e) {
+    if (!enabled) return;
+    const hover = e.buttons === 0 && e.pointerType !== 'touch';
+    last={x:e.clientX,y:e.clientY,edge:hover && nearEdge(e)};
+    if (contains(e.target) || last.edge) { clear(); if (hover && (last.edge || tab.contains(e.target))) setOpen(true); }
+    else later();
+  }
+  window.addEventListener('pointermove',move,true);
+  window.addEventListener('pointerdown',e=>{
+    if(!enabled)return;
+    keyboard=false;
+    if(contains(e.target)){held=e.pointerId;clear();}
+    else {last={x:e.clientX,y:e.clientY,edge:false};later();}
+  },true);
+  function release(e){if(held===e.pointerId){held=null;if(last && !contains(document.elementFromPoint(last.x,last.y)) && !last.edge)later();}}
+  window.addEventListener('pointerup',release,true);
+  window.addEventListener('pointercancel',release,true);
+  document.documentElement.addEventListener('pointerleave',()=>{last=null;later();});
+  window.addEventListener('blur',()=>{held=null;last=null;keyboard=false;later();});
+  window.addEventListener('keydown',e=>{if(e.key==='Tab')keyboard=true;},true);
+  tab.addEventListener('click',e=>{if(!enabled)return;setOpen(true);if(e.detail===0){keyboard=true;panel.querySelector('button:not([disabled])')?.focus({preventScroll:true});}});
+  panel.addEventListener('focusout',()=>{queueMicrotask(later);});
+  new MutationObserver(sync).observe(panel,{attributes:true,attributeFilter:['data-dock']});
+  sync();
+  return {enable(value){enabled=value;held=null;last=null;keyboard=false;tab.hidden=!value;setOpen(false);}};
+}
+
 async function toggle() {
   if (busy) return;
   if (failed) { report('failed'); return; }
@@ -1354,11 +1437,13 @@ async function toggle() {
     else {
       result = await bridge.prepare();
       if (result !== 'prepared') { report(result); return; }
-      style = document.createElement('style'); style.textContent = css; document.head.append(style);
+      style = document.createElement('style'); style.textContent = css + edgeCss; document.head.append(style);
       loadCore();
       result = bridge.complete();
       if (result !== 'on') throw new Error('activation incomplete');
+      edgeDrawer = installEdgeDrawer();
     }
+    if (result === 'on' || result === 'off') edgeDrawer?.enable(result === 'on');
     report(result);
   } catch (error) {
     failed = true;
@@ -1376,6 +1461,6 @@ window.addEventListener('keydown', event => {
   event.preventDefault();
   toggle();
 }, true);
-Object.defineProperty(window, '__YJA_BOOKMARK_V1', {value: Object.freeze({version:'37.0.0',toggle}),configurable:false});
+Object.defineProperty(window, '__YJA_BOOKMARK_V1', {value: Object.freeze({version:'38.0.0',toggle}),configurable:false});
 toggle();
 })();
