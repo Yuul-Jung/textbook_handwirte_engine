@@ -22,6 +22,13 @@
                 if (!validId(e.id) || (e.id.startsWith('__yja_board__')||e.id==='__yja_page__') || ids.has(e.id) || idCounts.get(e.id)!==1 || sections.some(other=>other!==e&&e.contains(other))) return true;
                 ids.add(e.id); return false;
             })) throw Error('anchors require unique stable IDs and cannot nest');
+            // v31: external integration never annotates the original host DOM.
+            // The engine consumes this validated reference on the integration script only.
+            if(c.external===true){
+                if(c.pageInk!==true)throw Error('external mode requires pageInk=true');
+                configs[0].yjaExternalConfig=Object.freeze({host,sections:Object.freeze(sections),course:c.course,chapter:c.chapter,revision:c.revision});
+                return;
+            }
             // Validate everything before changing the host DOM.
             host.setAttribute('data-yja-content','');
             Object.assign(host.dataset,{yjaCourse:c.course,yjaChapter:c.chapter,yjaRevision:c.revision});

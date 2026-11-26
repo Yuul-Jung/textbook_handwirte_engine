@@ -1,4 +1,4 @@
-/* YJ Annotation Engine v30 — no dependencies, no network requests. */
+/* YJ Annotation Engine v31 — no dependencies, no network requests. */
 (() => {
     'use strict';
     const NS = 'http://www.w3.org/2000/svg', SCHEMA = 1, LIMIT = 4000, POINT_LIMIT = 10000, TOTAL_POINTS = 150000;
@@ -266,22 +266,26 @@
     function init() {
         // v16: one explicit host per document; ambiguous hosts fail closed.
         if (document.documentElement.dataset.yjaConfigError) return;
-        const candidates = document.querySelectorAll('[data-yja-content]');
+        const externalNode=document.querySelector('script[type="application/json"][data-yja-config]');
+        const external=externalNode?.yjaExternalConfig;
+        const candidates = external?[external.host]:document.querySelectorAll('[data-yja-content]');
         if (candidates.length !== 1) { if(candidates.length>1) console.warn('YJA: exactly one host required'); return; }
         const host = candidates[0];
-        if (!host || host.dataset.yjaActive)
+        if (!host || host.dataset.yjaActive || externalNode?.yjaExternalActive)
             return;
-        const course = host.dataset.yjaCourse, chapter = host.dataset.yjaChapter, revision = host.dataset.yjaRevision;
+        const course = external?.course??host.dataset.yjaCourse, chapter = external?.chapter??host.dataset.yjaChapter, revision = external?.revision??host.dataset.yjaRevision;
         if (!course || !chapter || !revision) {
             console.warn('YJA: course/chapter/revision required');
             return;
         }
-        const sections = [...host.querySelectorAll('[data-yja-anchor]')];
+        const sections = external?[...external.sections]:[...host.querySelectorAll('[data-yja-anchor]')];
+        const externalIds=external?new Map(sections.map(e=>[e,e.id])):null;
+        const anchorId=e=>e?(externalIds?.get(e)??e.dataset.yjaAnchor):undefined;
         // v21: opt-in document-wide ink; existing integrations keep section mode.
-        const PAGE_ANCHOR='__yja_page__', pageEnabled=host.dataset.yjaPageInk==='true';
+        const PAGE_ANCHOR='__yja_page__', pageEnabled=!!external||host.dataset.yjaPageInk==='true';
         let pageMode=pageEnabled;
-        const anchors = new Map(sections.map(e => [e.dataset.yjaAnchor, e]));
-        if (!sections.length || anchors.size !== sections.length || sections.some(e => !e.dataset.yjaAnchor || e.querySelector('[data-yja-anchor]'))) {
+        const anchors = new Map(sections.map(e => [anchorId(e), e]));
+        if (!sections.length || anchors.size !== sections.length || sections.some(e => !anchorId(e) || e.querySelector('[data-yja-anchor]'))) {
             console.warn('YJA: unique non-nested anchors required');
             return;
         }
@@ -295,7 +299,9 @@
         try {
             const u=getComputedStyle(probe), l=getComputedStyle(probeLayer), h=getComputedStyle(host);
             cssReady=u.getPropertyValue('--yja-css-contract').trim()==='1' && u.position==='fixed' &&
-                l.position==='absolute' && l.pointerEvents==='none' && ['static','relative'].includes(h.position);
+                l.position==='absolute' && l.pointerEvents==='none' && (external||['static','relative'].includes(h.position));
+            if(external){const body=getComputedStyle(document.body),root=getComputedStyle(document.documentElement);
+                cssReady=cssReady&&[body,root].every(x=>x.position==='static'&&x.transform==='none'&&x.perspective==='none'&&x.filter==='none'&&x.contain==='none'&&x.willChange==='auto'&&x.zoom==='1');}
         } finally { probe.remove(); }
         if(!cssReady){console.warn('YJA: missing/incompatible CSS or host positioning; annotation disabled');return;}
         // (추가) 별도 판서 공간: 기존 절을 변경하지 않고 엔진이 관리하는 예약 앵커.
@@ -305,9 +311,11 @@
         board.setAttribute('aria-label','독립 판서 공간'); board.hidden=true;
         board.append(el('h2','yja-board-title','추가 판서 공간'),el('p','yja-board-help','수식 · 회로 · 타이밍 설명'),el('div','yja-board-grid'));
         const boardNav=el('div','yja-board-nav');boardNav.hidden=true;boardNav.setAttribute('role','group');boardNav.setAttribute('aria-label','백지 페이지 관리');
-        host.append(boardNav,board); sections.push(board); anchors.set(activeBoard,board);
-        host.dataset.yjaActive = 'true';
-        host.classList.add('yja-host');
+        // External boards live outside the original content container.
+        const boardParent=external?document.body:host;
+        boardParent.append(boardNav,board); sections.push(board); anchors.set(activeBoard,board);
+        if(external)externalNode.yjaExternalActive=true;
+        else {host.dataset.yjaActive = 'true';host.classList.add('yja-host');}
         const key = 'yja:' + JSON.stringify([course, chapter, revision]);
         // v19: authenticated pilot frame never reads/writes shared browser storage.
         const serverManaged=!!document.querySelector('#yja-server-config');
@@ -667,7 +675,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             const k=presetKey(t);if(k){lastInk=k;({color,width}=styleFor(k));}
             if (t !== 'select') visible = true; refresh(); fitFloat(); }
         function setNavigation(v){if(navHeld===v)return;finish(false);clearLaser();navHeld=v;drawSelection();refresh();}
-        function refresh() { if(pageButton){pageButton.querySelector('small').textContent=pageMode?'전체 판서':'절별 판서';pageButton.setAttribute('aria-label',pageMode?'전체 판서':'절별 판서');pageButton.setAttribute('aria-pressed',String(pageMode));document.body.classList.toggle('yja-page-drawing',tool!=='select'&&visible&&!navHeld);document.body.classList.toggle('yja-page-pen-only',inputMode==='pen');} const hs=historyStore.stats();sessionInfo.textContent=`이력 ${hs.undo}/${hs.redo} · 보존 좌표 ${hs.points.toLocaleString('ko-KR')}/300,000 · 오래된 이력 정리 ${hs.evicted}회 · 저장 ${saveSuccesses}/${saveAttempts} · ${lastSaveMs.toFixed(1)}ms`; modeReadout.textContent=!visible?'판서 숨김':navHeld?'일시 탐색':tool==='select'?'읽기 모드':(tool==='pen'&&autoShape?'자동 도형':tool==='highlight'&&highlightShape!=='free'?'형광펜 · '+shapeNames[highlightShape]:buttons.get(tool).getAttribute('aria-label'))+' · '+(inputMode==='pen'?'펜만':'펜+마우스');modeReadout.dataset.active=String(tool!=='select'&&visible&&!navHeld); refreshRecovery(); buttons.get('autoShape').setAttribute('aria-pressed',String(autoShape&&tool==='pen'||tool==='highlight'&&highlightShape==='auto'));buttons.get('axisSnap').setAttribute('aria-pressed',String(axisSnap));refreshPresets(); range.value=String(width);wl.textContent='굵기 '+width; for(const [n,b] of widthButtons)b.setAttribute('aria-pressed',String(n===width)); host.classList.toggle('yja-drawing', tool !== 'select' && visible && !navHeld); host.classList.toggle('yja-pen-only',inputMode==='pen'); modeButton.querySelector('small').textContent=inputMode==='both'?'펜+마우스':'펜만 판서';modeButton.setAttribute('aria-pressed',String(inputMode==='pen'));modeButton.setAttribute('aria-label',inputMode==='both'?'펜+마우스':'펜만 판서'); updateDiag(); layer.toggleAttribute('hidden', !visible); for (const t of ['select', 'edit', 'lasso', 'eraser', 'laser', ...drawTools])
+        function refresh() { if(pageButton){pageButton.querySelector('small').textContent=pageMode?'전체 판서':'절별 판서';pageButton.setAttribute('aria-label',pageMode?'전체 판서':'절별 판서');pageButton.setAttribute('aria-pressed',String(pageMode));document.body.classList.toggle('yja-page-drawing',tool!=='select'&&visible&&!navHeld);document.body.classList.toggle('yja-page-pen-only',inputMode==='pen');} const hs=historyStore.stats();sessionInfo.textContent=`이력 ${hs.undo}/${hs.redo} · 보존 좌표 ${hs.points.toLocaleString('ko-KR')}/300,000 · 오래된 이력 정리 ${hs.evicted}회 · 저장 ${saveSuccesses}/${saveAttempts} · ${lastSaveMs.toFixed(1)}ms`; modeReadout.textContent=!visible?'판서 숨김':navHeld?'일시 탐색':tool==='select'?'읽기 모드':(tool==='pen'&&autoShape?'자동 도형':tool==='highlight'&&highlightShape!=='free'?'형광펜 · '+shapeNames[highlightShape]:buttons.get(tool).getAttribute('aria-label'))+' · '+(inputMode==='pen'?'펜만':'펜+마우스');modeReadout.dataset.active=String(tool!=='select'&&visible&&!navHeld); refreshRecovery(); buttons.get('autoShape').setAttribute('aria-pressed',String(autoShape&&tool==='pen'||tool==='highlight'&&highlightShape==='auto'));buttons.get('axisSnap').setAttribute('aria-pressed',String(axisSnap));refreshPresets(); range.value=String(width);wl.textContent='굵기 '+width; for(const [n,b] of widthButtons)b.setAttribute('aria-pressed',String(n===width)); if(!external){host.classList.toggle('yja-drawing', tool !== 'select' && visible && !navHeld); host.classList.toggle('yja-pen-only',inputMode==='pen');} modeButton.querySelector('small').textContent=inputMode==='both'?'펜+마우스':'펜만 판서';modeButton.setAttribute('aria-pressed',String(inputMode==='pen'));modeButton.setAttribute('aria-label',inputMode==='both'?'펜+마우스':'펜만 판서'); updateDiag(); layer.toggleAttribute('hidden', !visible); for (const t of ['select', 'edit', 'lasso', 'eraser', 'laser', ...drawTools])
             buttons.get(t).setAttribute('aria-pressed', String((t === tool && !(t==='pen'&&autoShape))||(tool==='highlight'&&['line','rect','arrow','circle'].includes(t)&&highlightShape===t))); buttons.get('eye').setAttribute('aria-pressed', String(!visible)); for (const [c, b] of colorButtons)
             b.setAttribute('aria-pressed', String(c === color)); buttons.get('undo').disabled = !undo.length; buttons.get('redo').disabled = !redo.length; buttons.get('deleteSelection').disabled=!selected.size||!visible||navHeld; const name = buttons.get(tool).textContent; status(saveFailed ? '저장 불가 · JSON 내보내기' : (!visible ? '판서 숨김' : navHeld ? '일시 탐색 · Space 해제' : name + ' · ' + strokes.length + '개' + (autoShape&&tool==='pen'?' · 자동 도형':tool==='highlight'&&highlightShape!=='free'?' · '+shapeNames[highlightShape]:'') + (axisSnap&&(autoShape&&tool==='pen'||['line','arrow'].includes(tool)||tool==='highlight'&&['auto','line','arrow'].includes(highlightShape))?' · 축 정렬':'') + (['edit','lasso'].includes(tool) ? (selected.size?' · 선택 '+selected.size+'개':tool==='lasso'?' · 영역 그리기':' · 획 선택'):'') + (layoutHidden ? ' · 배치 변경 숨김 ' + layoutHidden : '')), saveFailed || layoutHidden > 0); }
         function physicalPageRect(){const r=document.body.getBoundingClientRect();return {left:-window.scrollX,top:-window.scrollY,width:document.documentElement.clientWidth,height:Math.max(document.documentElement.clientHeight,Math.ceil(r.bottom+window.scrollY))};}
@@ -678,8 +686,8 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         function rectOf(a){return a===PAGE_ANCHOR?pageRect():anchors.get(a).getBoundingClientRect();}
         function geometry(anchor) { const h = pageEnabled?pageRect():layer.getBoundingClientRect(), r = rectOf(anchor); return { x: r.left - h.left, y: r.top - h.top, w: r.width, h: r.height }; }
         function localPoint(e, a, previous=null, ending=false,r=rectOf(a),refreshNow=true) { const p = samplePressure(e.pointerType,e.pressure,pressure,mouseMock,previous,ending); recordInput(e,p,refreshNow); return [clamp((e.clientX - r.left) / Math.max(r.width, 1)), clamp((e.clientY - r.top) / Math.max(r.height, 1)), p]; }
-        function protectedTarget(e){return !!e.target?.closest?.('.yja-ui,.yja-diagnostic,.yja-board-nav,.yja-output-dialog,.yja-sync-panel,nav,button,input,select,textarea,a,summary,[contenteditable=true]');}
-        function anchorAt(e) { const section=sections.find(a => { const r = a.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; })?.dataset.yjaAnchor; if(isBoardId(section))return section; if(pageEnabled&&pageMode){const r=pageRect();if(e.clientX>=r.left&&e.clientX<=r.left+r.width&&e.clientY>=r.top&&e.clientY<=r.top+r.height)return PAGE_ANCHOR;} return section; }
+        function protectedTarget(e){return !!e.target?.closest?.('.yja-ui,.yja-diagnostic,.yja-board-nav,.yja-output-dialog,.yja-sync-panel,nav,button,input,select,textarea,a,summary,[contenteditable=true]'+(external?',label,[contenteditable],[role=button],[role=link],[role=checkbox],[role=menuitem],[role=tab],[role=slider],[role=textbox]':''));}
+        function anchorAt(e) { const section=anchorId(sections.find(a => { const r = a.getBoundingClientRect(); return r.width > 0 && r.height > 0 && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; })); if(isBoardId(section))return section; if(pageEnabled&&pageMode){const r=pageRect();if(e.clientX>=r.left&&e.clientX<=r.left+r.width&&e.clientY>=r.top&&e.clientY<=r.top+r.height)return PAGE_ANCHOR;} return section; }
         // Layout signature: fail closed rather than place a mark over the wrong text.
         function layoutOf(a) {
             if(a!==PAGE_ANCHOR)return layoutOfElement(anchors.get(a));
@@ -708,7 +716,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         function pageBands(cache){
             if(cache?.has(bandCacheKey))return cache.get(bandCacheKey);
             const g=geometry(PAGE_ANCHOR), entries=sections.filter(e=>e!==board).map((e,i)=>{
-                const r=geometry(e.dataset.yjaAnchor);return {i,g:r,n:layoutOfElement(e)};
+                const r=geometry(anchorId(e));return {i,g:r,n:layoutOfElement(e)};
             }).filter(e=>e.g.w>0&&e.g.h>0);
             const v={g,entries};cache?.set(bandCacheKey,v);return v;
         }
@@ -794,7 +802,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             const settings=el('div','yja-output-settings');dialog.append(settings);
             function choice(label,options){const l=el('label','',label),s=el('select');s.setAttribute('aria-label',label);for(const [v,t] of options){const o=el('option','',t);o.value=v;s.append(o);}l.append(s);settings.append(l);return s;}
             const lessonSections=sections.filter(e=>e!==board);
-            const scope=choice('출력 범위',[['chapter','교재 전체 (절별)'],['page','전체 배경 · 여백 포함'],...lessonSections.map(e=>['section:'+e.dataset.yjaAnchor,e.querySelector('h2,h3')?.textContent||e.dataset.yjaAnchor]),['board','현재 백지'],['boards','전체 백지'],['all','교재 + 전체 백지']]);
+            const scope=choice('출력 범위',[['chapter','교재 전체 (절별)'],['page','전체 배경 · 여백 포함'],...lessonSections.map(e=>['section:'+anchorId(e),e.querySelector('h2,h3')?.textContent||anchorId(e)]),['board','현재 백지'],['boards','전체 백지'],['all','교재 + 전체 백지']]);
             const ink=choice('판서 포함',[['yes','판서 포함'],['no','원본만']]);
             const quality=choice('이미지 해상도',[['1','표준 (1배)'],['2','고해상도 (2배)']]);
             const orientation=choice('PDF 용지',[['portrait','A4 세로'],['landscape','A4 가로']]);
@@ -819,8 +827,8 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
                     const snapshotStrokes=strokes.slice(),snapshotBoards=boards.slice();
                     const targets=[];
                     if(v==='page')targets.push({id:'page',title:'전체 배경',page:true});
-                    if(v==='chapter'||v==='all')for(const e of lessonSections)targets.push({id:e.dataset.yjaAnchor,e,title:e.querySelector('h2,h3')?.textContent||e.dataset.yjaAnchor});
-                    if(v.startsWith('section:')){const e=anchors.get(v.slice(8));if(e)targets.push({id:e.dataset.yjaAnchor,e,title:e.querySelector('h2,h3')?.textContent||e.dataset.yjaAnchor});}
+                    if(v==='chapter'||v==='all')for(const e of lessonSections)targets.push({id:anchorId(e),e,title:e.querySelector('h2,h3')?.textContent||anchorId(e)});
+                    if(v.startsWith('section:')){const e=anchors.get(v.slice(8));if(e)targets.push({id:anchorId(e),e,title:e.querySelector('h2,h3')?.textContent||anchorId(e)});}
                     if(['board','boards','all'].includes(v))for(const b of snapshotBoards.filter(b=>v!=='board'||b.id===activeBoard))targets.push({id:b.id,title:b.name,board:true});
                     if(!targets.length)throw Error('출력할 범위가 없습니다.');
                     let pixels=0,omitted=0,shrunk=0;const outputs=[];
@@ -852,7 +860,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
                             let source=t.e;
                             if(t.board){
                                 if(t.id===activeBoard&&!board.hidden)source=board;
-                                else {stage=board.cloneNode(true);stage.hidden=false;stage.removeAttribute('data-yja-anchor');Object.assign(stage.style,{position:'fixed',left:'-100000px',top:'0',width:host.clientWidth+'px',margin:'0',pointerEvents:'none'});host.append(stage);source=stage;}
+                                else {stage=board.cloneNode(true);stage.hidden=false;stage.removeAttribute('data-yja-anchor');Object.assign(stage.style,{position:'fixed',left:'-100000px',top:'0',width:host.clientWidth+'px',margin:'0',pointerEvents:'none'});boardParent.append(stage);source=stage;}
                             }
                             const r=source.getBoundingClientRect(),w=Math.ceil(r.width),h=Math.ceil(r.height);
                             if(w<1||h<1||w*scale>8192||h*scale>8192||(pixels+=w*h*scale*scale)>40000000)throw Error('출력 크기 제한 초과 · 범위를 줄이거나 표준 해상도를 선택하세요.');
@@ -1024,7 +1032,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         function setLaser(e,a){clearTimeout(laserTimer);laserPoint={anchor:a,point:localPoint(e,a)};drawLaser();}
         function erase(e,samples=[e]) {
             const r=layer.getBoundingClientRect();
-            const cache=new Map(),keys=[...sections.map(a=>a.dataset.yjaAnchor),...(pageEnabled?[PAGE_ANCHOR]:[])].map(id=>{const state=anchorState(id,cache);return [id,state?geometryKey(state):null];}),signature=JSON.stringify(keys);
+            const cache=new Map(),keys=[...sections.map(anchorId),...(pageEnabled?[PAGE_ANCHOR]:[])].map(id=>{const state=anchorState(id,cache);return [id,state?geometryKey(state):null];}),signature=JSON.stringify(keys);
             // Do not bridge an eraser trajectory across a changed coordinate frame.
             if(!live.eraseIndex||live.eraseIndex.signature!==signature){const grid=makeGrid();for(const s of strokes)if(matches(s,cache)){const pts=xy(s,strokeGeometry(s,cache));grid.add([s,pts],hitBounds(s,pts));}live.eraseIndex={signature,grid};live.eraseLast=null;}
             for(const q of samples){
@@ -1133,7 +1141,10 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             if(e.buttons!==0){live.captureLost=true;return;}
             finish(false);
         });
-        window.addEventListener('keydown', e => { if (e.defaultPrevented || e.isComposing || e.keyCode===229 || e.altKey || (e.ctrlKey&&e.metaKey)) return; if (e.target.closest?.('.yja-output-dialog,input,textarea,select,[contenteditable],[role=textbox],[role=combobox],[role=slider],[role=spinbutton],[role=menu],[role=tablist]'))
+        window.addEventListener('keydown', e => {
+            // External reading mode must not steal the host's shortcuts. Activate a pen or focus our own toolbar first.
+            if(external&&tool==='select'&&!e.target.closest?.('.yja-ui'))return;
+            if (e.defaultPrevented || e.isComposing || e.keyCode===229 || e.altKey || (e.ctrlKey&&e.metaKey)) return; if (e.target.closest?.('.yja-output-dialog,input,textarea,select,[contenteditable],[role=textbox],[role=combobox],[role=slider],[role=spinbutton],[role=menu],[role=tablist]'))
             return; if (e.key === 'Escape') {
             if(e.repeat){e.preventDefault();return;}
             // Cancel only the current action first; do not unexpectedly leave the ink tool.

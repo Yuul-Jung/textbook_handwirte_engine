@@ -1,3 +1,10 @@
+# 전자교재 판서 엔진 v31 — 외부 연결 및 원본 불변성
+
+- 신규 외부 연결 시험: `annotation_external_v31.html` (`external:true, pageInk:true`).
+- 기존 연결 시험: `annotation_course_v31.html`.
+- 검증: `VALIDATION_v31.md`, `tests/test_external_v31.py`, `tests/run_v31.sh`.
+- 기존 교재와 운영 환경은 변경하지 않음. 외부 모드의 지원 조건과 제한은 검증 문서 참조.
+
 # 전자교재 판서 엔진 v30 — 입력 안정성 및 종합 검증
 
 관리자 전용 시험 플러그인. 실제 WordPress·Sensei LMS·MariaDB·DS920+ 검증 전 운영 설치 금지. PHP 7.4+/WordPress 6.2+ 설계 기준이며 현재 CLI PHP 8.4만 검증했다.
