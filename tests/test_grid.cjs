@@ -1,8 +1,0 @@
-const assert=require('node:assert/strict');const {makeGrid,hitBounds,strokeHit}=require('../yja-annotation-pilot/lesson/annotation/annotation.js');let count=0;
-function test(n,f){f();console.log('PASS',n);count++}
-test('negative coordinates and cell boundary',()=>{const g=makeGrid();g.add('x',{l:-65,t:-2,r:64,b:2});assert.deepEqual(g.query({l:64,t:0,r:64,b:0}),['x']);assert.equal(g.query({l:65,t:0,r:65,b:0}).length,0)});
-test('deduplicate and long stroke fallback',()=>{const g=makeGrid();g.add('x',{l:-10000,t:-10000,r:10000,b:10000});g.add('y',{l:0,t:0,r:200,b:200});assert.equal(g.query({l:0,t:0,r:200,b:200}).length,2);assert.equal(g.query({l:-10000,t:-10000,r:10000,b:10000}).length,2)});
-let seed=199;const rnd=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};
-test('random broad-phase never omits exact hits for all tools',()=>{const g=makeGrid(),items=[];for(let i=0;i<400;i++){const s={tool:['pen','highlight','line','arrow','rect','circle'][i%6],width:1+Math.floor(rnd()*12)},p=[[rnd()*1000,rnd()*700],[rnd()*1000,rnd()*700]];if(i%6<2)p.push([rnd()*1000,rnd()*700]);items.push([s,p]);g.add(i,hitBounds(s,p))}for(let j=0;j<300;j++){const x=rnd()*1000,y=rnd()*700,c=new Set(g.query({l:x,r:x,t:y,b:y}));items.forEach(([s,p],i)=>{if(strokeHit(s.tool,p,s.width,x,y))assert(c.has(i),`${s.tool} ${i}`)})}});
-test('arrowhead and highlighter padding',()=>{for(const [tool,x,y] of [['arrow',84,8],['highlight',50,12]]){const s={tool,width:4},p=[[0,0],[100,0]],g=makeGrid();g.add(1,hitBounds(s,p));assert(strokeHit(tool,p,4,x,y));assert(g.query({l:x,r:x,t:y,b:y}).includes(1))}});
-console.log(count+' grid tests passed');

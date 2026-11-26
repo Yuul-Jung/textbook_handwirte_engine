@@ -1,5 +1,0 @@
-PASS default slots valid and independent
-PASS settings reject malformed schema and indexes
-PASS settings reject unsafe color and width values
-PASS validated data copies fields only
-4 preset core tests passed.

@@ -1,9 +1,0 @@
-PASS shared immutable strokes charged once
-PASS distinct edited objects consume budget and oldest removed
-PASS undo redo identity and new edit discards redo references
-PASS 40 snapshot limit independent of points
-PASS dense 150000 point replacements bounded
-PASS undo budget stays bounded while retaining immediate target
-PASS two-stage shape undo preserves raw then absent
-PASS explicit deletion clears undo redo references
-8 history checks passed.

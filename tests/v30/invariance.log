@@ -1,7 +1,0 @@
-PASS byte-identical yja-annotation-pilot/lesson/annotation/annotation.css SHA256 83e488810d7b66acc8445b6fc4c9f6fffee9d671851e09e7c4130499adbe3fdd
-PASS byte-identical yja-annotation-pilot/lesson/annotation/annotation-config.js SHA256 1c5b0116917603f0fbafd16b9f982c2b36c7dc553b160b2afc25c94e70e0d2d3
-PASS byte-identical yja-annotation-pilot/lesson/annotation/server-sync.js SHA256 37fb44bcde89d8538a7534650b6bb78e44f5ae05ea7a37dff437235f0f7a97f6
-PASS byte-identical yja-annotation-pilot/server-storage.php SHA256 c5d0ee6553617b9297cdec32f9091dde0e3f3879edf01d135122e2687f54b3f9
-PASS fixture HTML unchanged except version markers
-PASS standalone HTML unchanged except embedded engine and version markers
-6/6 static invariance checks passed

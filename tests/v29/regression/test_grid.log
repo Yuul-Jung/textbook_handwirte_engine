@@ -1,5 +1,0 @@
-PASS negative coordinates and cell boundary
-PASS deduplicate and long stroke fallback
-PASS random broad-phase never omits exact hits for all tools
-PASS arrowhead and highlighter padding
-4 grid tests passed

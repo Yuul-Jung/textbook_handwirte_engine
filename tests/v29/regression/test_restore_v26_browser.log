@@ -1,7 +1,0 @@
-PASS real v25 page stroke uses legacy signature
-PASS v26 loads old stroke at original layout unchanged
-PASS new and legacy strokes coexist
-PASS mixed payload restores in new document
-PASS only new localized stroke follows resize
-PASS both restored after return to initial geometry
-6 compatibility checks passed
