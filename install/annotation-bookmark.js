@@ -125,12 +125,15 @@ function loadCore() {
     'use strict';
     const NS = 'http://www.w3.org/2000/svg', SCHEMA = 1, LIMIT = 4000, POINT_LIMIT = 10000, TOTAL_POINTS = 150000;
     const icons = { select: 'M5 3l14 10-7 1-3 7z', pen: 'M4 20l4-1L20 7l-4-4L4 15z M13 6l4 4', highlight: 'M4 16l4 4 12-12-4-4z M3 21h10', eraser: 'M3 13l10-10 8 8-10 10H7z M8 8l8 8', line: 'M4 20L20 4', arrow: 'M4 20L20 4 M10 4h10v10', rect: 'M4 5h16v14H4z', circle: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18', undo: 'M8 4L3 9l5 5 M3 9h10a7 7 0 0 1 0 14', redo: 'M16 4l5 5-5 5 M21 9H11a7 7 0 0 0 0 14', eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6', save: 'M4 3h13l3 3v15H4z M8 3v7h8V3 M8 21v-7h8v7', more: 'M5 12h1m5 0h1m5 0h1', close: 'M5 5l14 14 M19 5L5 19', menu: 'M4 6h16 M4 12h16 M4 18h16', trash: 'M4 6h16 M9 6V3h6v3 M6 6l1 15h10l1-15 M10 10v7 M14 10v7', export: 'M12 3v12 M7 10l5 5 5-5 M4 16v5h16v-5', import: 'M12 15V3 M7 8l5-5 5 5 M4 16v5h16v-5' };
-    const colors = ['#172033', '#d72638', '#1764d2', '#16805c', '#e7a000', '#853ac5'];
+    const colors = ['#172033', '#d72638', '#1764d2', '#16805c', '#e7a000', '#853ac5', '#ffffff', '#f97316'];
+    const validColor=c=>typeof c==='string'&&/^#[0-9a-f]{6}$/i.test(c);
+    const validOpacity=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0.1&&v<=1;
+    const defaultOpacity=t=>t==='highlight'?0.3:1;
     // (추가) 4개 슬롯의 설정은 판서 데이터와 분리한다.
     const slotTypes=['pen','pen','pen','highlight'];
     function defaultPresets(){return {schema:1,slots:[{color:colors[0],width:2},{color:colors[1],width:3},{color:colors[2],width:4},{color:colors[4],width:8}],pen:1,highlight:3,shape:{color:colors[1],width:3}};}
     function validatePresets(v){
-        const style=x=>{if(!x||!colors.includes(x.color)||!Number.isInteger(x.width)||x.width<1||x.width>12)throw Error('프리셋 색/굵기 오류');return {color:x.color,width:x.width};};
+        const style=x=>{if(!x||!validColor(x.color)||(x.opacity!==undefined&&!validOpacity(x.opacity))||!Number.isInteger(x.width)||x.width<1||x.width>12)throw Error('프리셋 색/굵기 오류');return {color:x.color.toLowerCase(),width:x.width,...(x.opacity===undefined?{}:{opacity:x.opacity})};};
         if(!v||v.schema!==1||!Array.isArray(v.slots)||v.slots.length!==4||!Number.isInteger(v.pen)||v.pen<0||v.pen>2||v.highlight!==3)throw Error('프리셋 구조 오류');
         return {schema:1,slots:v.slots.map(style),pen:v.pen,highlight:3,shape:style(v.shape)};
     }
@@ -555,7 +558,7 @@ function loadCore() {
         function refreshPresets(){for(let i=0;i<4;i++){const {b,mark,label}=presetButtons[i],v=presetData.slots[i],k=slotTypes[i];
             b.setAttribute('aria-pressed',String(presetKey(tool)===k&&presetData[k]===i&&!navHeld&&visible));b.title=`${i+1}번 ${k==='pen'?'펜':'형광펜'} · ${v.color} · ${v.width}px`;
             label.textContent=(i+1)+' '+(k==='pen'?'펜':'형광')+' '+v.width;
-            mark.setAttribute('style',`stroke:${v.color};stroke-width:${k==='highlight'?Math.min(v.width+3,12):Math.min(v.width,8)};stroke-opacity:${k==='highlight'?'.55':'1'};fill:none`);
+            mark.setAttribute('style',`stroke:${v.color};stroke-width:${k==='highlight'?Math.min(v.width+3,12):Math.min(v.width,8)};stroke-opacity:${v.opacity??defaultOpacity(k)};fill:none`);
         }presetStatus.textContent=presetWarning||'1–4 빠른 전환';presetStatus.dataset.warn=String(!!presetWarning);}
         const cg = group();
         cg.classList.add('yja-sep');cg.classList.add('yja-style-group');
@@ -574,9 +577,16 @@ function loadCore() {
             sw.append(b);
             colorButtons.push([c, b]);
         }
+        // v39: choose any RGB color and per-preset opacity, without changing existing strokes.
+        const customColor=el('input');customColor.type='color';customColor.setAttribute('aria-label','사용자 지정 색상');customColor.title='사용자 지정 색상';
+        const customLabel=el('label','yja-custom-color','색상');customLabel.append(customColor);cg.append(customLabel);
+        customColor.addEventListener('change',()=>{if(validColor(customColor.value))changeStyle({color:customColor.value});});
+        const opacityLabel=el('label','yja-opacity-label','');const opacityRange=el('input');opacityRange.type='range';opacityRange.min='10';opacityRange.max='100';opacityRange.step='5';opacityRange.setAttribute('aria-label','불투명도');
+        const opacityText=el('span');opacityLabel.append(opacityText,opacityRange);cg.append(opacityLabel);
+        opacityRange.addEventListener('input',()=>{const v=Number(opacityRange.value)/100;if(validOpacity(v))changeStyle({opacity:v});});
         // (추가) 자주 쓰는 굵기를 별도 메뉴 진입 없이 선택한다.
         const widths=el('div','yja-widths');cg.append(widths);const widthButtons=[];
-        for(const n of [2,4,8]){const b=el('button','',String(n));b.type='button';b.setAttribute('aria-label','굵기 '+n+' px');b.addEventListener('click',()=>setWidth(n));widths.append(b);widthButtons.push([n,b]);}
+        for(const n of [1,2,3,4,8]){const b=el('button','',String(n));b.type='button';b.setAttribute('aria-label','굵기 '+n+' px');b.addEventListener('click',()=>setWidth(n));widths.append(b);widthButtons.push([n,b]);}
         const ug = group();ug.classList.add('yja-history-group');
         ug.classList.add('yja-sep');
         button(ug, 'undo', '취소', () => history(false));
@@ -755,8 +765,8 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         function refreshRecovery(){recovery.hidden=!saveFailed;retry.disabled=storageBlocked;rawBackup.hidden=corruptRaw===null;recoveryText.textContent=storageBlocked?(corruptRaw!==null?'오류 원본 백업 · 정상 JSON 불러오기 가능':'저장 충돌/읽기 오류 · 백업 후 새로고침'):'저장 실패 · 재시도 또는 백업';}
         function payload() { return { schema: SCHEMA, course, chapter, revision, strokes, boards, activeBoard }; }
         function validate(o) { if (!o || o.schema !== SCHEMA || o.course !== course || o.chapter !== chapter || o.revision !== revision || !Array.isArray(o.strokes) || o.strokes.length > LIMIT)
-            throw Error('스키마 또는 교재/장/개정 ID 불일치'); const pageData=validateBoards(o.boards,o.activeBoard),validBoardIds=new Set(pageData.boards.map(b=>b.id)); let total = 0; const ids = new Set(); const validated=o.strokes.map(s => { if (!s || typeof s.id !== 'string' || s.id.length > 100 || ids.has(s.id) || !(isBoardId(s.anchor)?validBoardIds.has(s.anchor):anchors.has(s.anchor)) || !drawTools.includes(s.tool) || !colors.includes(s.color) || !Number.isFinite(s.width) || s.width < 1 || s.width > 12 || !Array.isArray(s.layout) || s.layout.length < 2 || s.layout.length > 100 || !s.layout.every(Number.isFinite) || !Array.isArray(s.points) || !s.points.length || s.points.length > POINT_LIMIT || (total += s.points.length) > TOTAL_POINTS || (!['pen', 'highlight'].includes(s.tool) && s.points.length !== 2))
-            throw Error('잘못된 판서 데이터'); ids.add(s.id); return { id: s.id, anchor: s.anchor, tool: s.tool, color: s.color, width: s.width, layout: s.layout.slice(), smooth: s.smooth === true, points: s.points.map(p => { if (!Array.isArray(p) || p.length !== 3 || !p.every(Number.isFinite) || p[0] < 0 || p[0] > 1 || p[1] < 0 || p[1] > 1 || p[2] < 0 || p[2] > 1)
+            throw Error('스키마 또는 교재/장/개정 ID 불일치'); const pageData=validateBoards(o.boards,o.activeBoard),validBoardIds=new Set(pageData.boards.map(b=>b.id)); let total = 0; const ids = new Set(); const validated=o.strokes.map(s => { if (!s || typeof s.id !== 'string' || s.id.length > 100 || ids.has(s.id) || !(isBoardId(s.anchor)?validBoardIds.has(s.anchor):anchors.has(s.anchor)) || !drawTools.includes(s.tool) || !validColor(s.color) || (s.opacity!==undefined&&!validOpacity(s.opacity)) || !Number.isFinite(s.width) || s.width < 1 || s.width > 12 || !Array.isArray(s.layout) || s.layout.length < 2 || s.layout.length > 100 || !s.layout.every(Number.isFinite) || !Array.isArray(s.points) || !s.points.length || s.points.length > POINT_LIMIT || (total += s.points.length) > TOTAL_POINTS || (!['pen', 'highlight'].includes(s.tool) && s.points.length !== 2))
+            throw Error('잘못된 판서 데이터'); ids.add(s.id); return { id: s.id, anchor: s.anchor, tool: s.tool, color: s.color, width: s.width, ...(s.opacity===undefined?{}:{opacity:s.opacity}), layout: s.layout.slice(), smooth: s.smooth === true, points: s.points.map(p => { if (!Array.isArray(p) || p.length !== 3 || !p.every(Number.isFinite) || p[0] < 0 || p[0] > 1 || p[1] < 0 || p[1] > 1 || p[2] < 0 || p[2] > 1)
                 throw Error('잘못된 좌표'); return p.slice(); }) }; }); return {...pageData,strokes:validated}; }
         // v12: retain the exact loaded value; never silently replace a changed or corrupt record.
         let storedRaw = null, corruptRaw = null;
@@ -797,7 +807,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             const k=presetKey(t);if(k){lastInk=k;({color,width}=styleFor(k));}
             if (t !== 'select') visible = true; refresh(); fitFloat(); }
         function setNavigation(v){if(navHeld===v)return;finish(false);clearLaser();navHeld=v;drawSelection();refresh();}
-        function refresh() { if(pageButton){pageButton.querySelector('small').textContent=pageMode?'전체 판서':'절별 판서';pageButton.setAttribute('aria-label',pageMode?'전체 판서':'절별 판서');pageButton.setAttribute('aria-pressed',String(pageMode));document.body.classList.toggle('yja-page-drawing',tool!=='select'&&visible&&!navHeld);document.body.classList.toggle('yja-page-pen-only',inputMode==='pen');} const hs=historyStore.stats();sessionInfo.textContent=`이력 ${hs.undo}/${hs.redo} · 보존 좌표 ${hs.points.toLocaleString('ko-KR')}/300,000 · 오래된 이력 정리 ${hs.evicted}회 · 저장 ${saveSuccesses}/${saveAttempts} · ${lastSaveMs.toFixed(1)}ms`; modeReadout.textContent=!visible?'판서 숨김':navHeld?'일시 탐색':tool==='select'?'읽기 모드':(tool==='pen'&&autoShape?'자동 도형':tool==='highlight'&&highlightShape!=='free'?'형광펜 · '+shapeNames[highlightShape]:buttons.get(tool).getAttribute('aria-label'))+' · '+(inputMode==='pen'?'펜만':'펜+마우스');modeReadout.dataset.active=String(tool!=='select'&&visible&&!navHeld); refreshRecovery(); buttons.get('autoShape').setAttribute('aria-pressed',String(autoShape&&tool==='pen'||tool==='highlight'&&highlightShape==='auto'));buttons.get('axisSnap').setAttribute('aria-pressed',String(axisSnap));refreshPresets(); range.value=String(width);wl.textContent='굵기 '+width; for(const [n,b] of widthButtons)b.setAttribute('aria-pressed',String(n===width)); if(!external){host.classList.toggle('yja-drawing', tool !== 'select' && visible && !navHeld); host.classList.toggle('yja-pen-only',inputMode==='pen');} modeButton.querySelector('small').textContent=inputMode==='both'?'펜+마우스':'펜만 판서';modeButton.setAttribute('aria-pressed',String(inputMode==='pen'));modeButton.setAttribute('aria-label',inputMode==='both'?'펜+마우스':'펜만 판서'); updateDiag(); layer.toggleAttribute('hidden', !visible); for (const t of ['select', 'edit', 'lasso', 'eraser', 'laser', ...drawTools])
+        function refresh() { if(pageButton){pageButton.querySelector('small').textContent=pageMode?'전체 판서':'절별 판서';pageButton.setAttribute('aria-label',pageMode?'전체 판서':'절별 판서');pageButton.setAttribute('aria-pressed',String(pageMode));document.body.classList.toggle('yja-page-drawing',tool!=='select'&&visible&&!navHeld);document.body.classList.toggle('yja-page-pen-only',inputMode==='pen');} const hs=historyStore.stats();sessionInfo.textContent=`이력 ${hs.undo}/${hs.redo} · 보존 좌표 ${hs.points.toLocaleString('ko-KR')}/300,000 · 오래된 이력 정리 ${hs.evicted}회 · 저장 ${saveSuccesses}/${saveAttempts} · ${lastSaveMs.toFixed(1)}ms`; modeReadout.textContent=!visible?'판서 숨김':navHeld?'일시 탐색':tool==='select'?'읽기 모드':(tool==='pen'&&autoShape?'자동 도형':tool==='highlight'&&highlightShape!=='free'?'형광펜 · '+shapeNames[highlightShape]:buttons.get(tool).getAttribute('aria-label'))+' · '+(inputMode==='pen'?'펜만':'펜+마우스');modeReadout.dataset.active=String(tool!=='select'&&visible&&!navHeld); refreshRecovery(); buttons.get('autoShape').setAttribute('aria-pressed',String(autoShape&&tool==='pen'||tool==='highlight'&&highlightShape==='auto'));buttons.get('axisSnap').setAttribute('aria-pressed',String(axisSnap));refreshPresets(); const currentOpacity=styleFor(presetKey(tool)||lastInk).opacity??defaultOpacity(presetKey(tool)||lastInk);customColor.value=color;opacityRange.value=String(Math.round(currentOpacity*100));opacityText.textContent='불투명도 '+Math.round(currentOpacity*100)+'%'; range.value=String(width);wl.textContent='굵기 '+width; for(const [n,b] of widthButtons)b.setAttribute('aria-pressed',String(n===width)); if(!external){host.classList.toggle('yja-drawing', tool !== 'select' && visible && !navHeld); host.classList.toggle('yja-pen-only',inputMode==='pen');} modeButton.querySelector('small').textContent=inputMode==='both'?'펜+마우스':'펜만 판서';modeButton.setAttribute('aria-pressed',String(inputMode==='pen'));modeButton.setAttribute('aria-label',inputMode==='both'?'펜+마우스':'펜만 판서'); updateDiag(); layer.toggleAttribute('hidden', !visible); for (const t of ['select', 'edit', 'lasso', 'eraser', 'laser', ...drawTools])
             buttons.get(t).setAttribute('aria-pressed', String((t === tool && !(t==='pen'&&autoShape))||(tool==='highlight'&&['line','rect','arrow','circle'].includes(t)&&highlightShape===t))); buttons.get('eye').setAttribute('aria-pressed', String(!visible)); for (const [c, b] of colorButtons)
             b.setAttribute('aria-pressed', String(c === color)); buttons.get('undo').disabled = !undo.length; buttons.get('redo').disabled = !redo.length; buttons.get('deleteSelection').disabled=!selected.size||!visible||navHeld; const name = buttons.get(tool).textContent; status(saveFailed ? '저장 불가 · JSON 내보내기' : (!visible ? '판서 숨김' : navHeld ? '일시 탐색 · Space 해제' : name + ' · ' + strokes.length + '개' + (autoShape&&tool==='pen'?' · 자동 도형':tool==='highlight'&&highlightShape!=='free'?' · '+shapeNames[highlightShape]:'') + (axisSnap&&(autoShape&&tool==='pen'||['line','arrow'].includes(tool)||tool==='highlight'&&['auto','line','arrow'].includes(highlightShape))?' · 축 정렬':'') + (['edit','lasso'].includes(tool) ? (selected.size?' · 선택 '+selected.size+'개':tool==='lasso'?' · 영역 그리기':' · 획 선택'):'') + (layoutHidden ? ' · 배치 변경 숨김 ' + layoutHidden : '')), saveFailed || layoutHidden > 0); }
         function physicalPageRect(){const r=document.body.getBoundingClientRect();return {left:-window.scrollX,top:-window.scrollY,width:document.documentElement.clientWidth,height:Math.max(document.documentElement.clientHeight,Math.ceil(r.bottom+window.scrollY))};}
@@ -888,11 +898,11 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
         function graphic(s, bounds) {
             const pts = xy(s, bounds), a = pts[0], b = pts.at(-1), g = svg('g', { 'data-stroke': s.id, 'stroke': s.color, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'fill': 'none' });
             const w = s.width;
+            const alpha=s.opacity??defaultOpacity(s.tool);if(alpha!==1)g.setAttribute('opacity',String(alpha));
             if (s.tool === 'pen') {
                 g.append(svg('path',{d:inkPath(pts,w),fill:s.color,stroke:'none','fill-rule':'nonzero'}));
             }
             else if (s.tool === 'highlight') {
-                g.setAttribute('opacity', '.3');
                 g.append(svg('polyline', { points: pts.map(p => p.slice(0, 2).join(',')).join(' '), 'stroke-width': w + 10 }));
                 if (pts.every(p=>p[0]===a[0]&&p[1]===a[1]))
                     g.append(svg('circle', { cx: a[0], cy: a[1], r: (w + 10) / 2, fill: s.color, stroke: 'none' }));
@@ -1180,7 +1190,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
             if(activeTool==='edit'){editDown(e,anchor);return;}
             if(activeTool==='lasso'){live.lasso=[lassoPoint(e)];live.layout=layoutOf(anchor);live.add=addSelection||e.shiftKey;drawLasso();return;}
             const p=localPoint(e,anchor);live.last=p;live.highlightMode=activeTool==='highlight'?highlightShape:'free';live.start=p;
-            live.s={id:globalThis.crypto?.randomUUID?.()||Date.now()+'-'+Math.random(),anchor,tool:activeTool,color,width,smooth:activeTool==='pen'&&smooth,layout:layoutOf(anchor),points:['pen','highlight'].includes(activeTool)?[p]:[p,p]};scheduleLive();
+            live.s={id:globalThis.crypto?.randomUUID?.()||Date.now()+'-'+Math.random(),anchor,tool:activeTool,color,width,...(styleFor(presetKey(activeTool)||lastInk).opacity===undefined?{}:{opacity:styleFor(presetKey(activeTool)||lastInk).opacity}),smooth:activeTool==='pen'&&smooth,layout:layoutOf(anchor),points:['pen','highlight'].includes(activeTool)?[p]:[p,p]};scheduleLive();
         }
         function move(e,ending=false) {
             if(!live||live.pointer!==e.pointerId||live.pointerType!==e.pointerType)return;
@@ -1354,13 +1364,20 @@ const edgeCss = `
 .yja-edge-tab[data-dock="bottom"]{top:auto;bottom:0;right:auto;left:50%;transform:translateX(-50%);width:76px;height:10px;border-radius:5px 5px 0 0}
 .yja-edge-tab[data-dock="bottom"]::after{inset:3px 27px}
 @media (pointer:fine){
-.yja-ui[data-yja-edge-open]:not([data-dock=bottom]):not([data-collapsed=true]){width:136px;padding:5px;gap:4px}
-.yja-ui[data-yja-edge-open] button,.yja-ui[data-yja-edge-open] .yja-topbar button,.yja-ui[data-yja-edge-open] .yja-group button,.yja-ui[data-yja-edge-open] .yja-widths button,.yja-ui[data-yja-edge-open] .yja-preset,.yja-ui[data-yja-edge-open] .yja-recovery button{min-height:36px;min-width:0;padding:3px}
-.yja-ui[data-yja-edge-open] button svg{width:16px;height:16px}
-.yja-ui[data-yja-edge-open] .yja-preset svg{width:28px;height:15px}
+.yja-ui[data-yja-edge-open]:not([data-dock=bottom]):not([data-collapsed=true]){width:124px;padding:4px;gap:3px}
+.yja-ui[data-yja-edge-open] button,.yja-ui[data-yja-edge-open] .yja-topbar button,.yja-ui[data-yja-edge-open] .yja-group button,.yja-ui[data-yja-edge-open] .yja-widths button,.yja-ui[data-yja-edge-open] .yja-preset,.yja-ui[data-yja-edge-open] .yja-recovery button{min-height:30px;min-width:0;padding:2px}
+.yja-ui[data-yja-edge-open] button svg{width:14px;height:14px}
+.yja-ui[data-yja-edge-open] .yja-preset svg{width:24px;height:13px}
 .yja-ui[data-yja-edge-open] button small{font-size:10px}
-.yja-ui[data-yja-edge-open] .yja-mode-readout{font-size:11px;padding:3px 2px}
+.yja-ui[data-yja-edge-open] .yja-mode-readout{font-size:10px;padding:3px 2px}
+.yja-ui[data-yja-edge-open] .yja-topbar button[aria-label="간소화"],.yja-ui[data-yja-edge-open] .yja-scope-group button,.yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-style-group .yja-swatches button,.yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-widths button{min-height:30px}
+.yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-style-group .yja-swatches{grid-template-columns:repeat(4,minmax(0,1fr));gap:2px}
+.yja-ui[data-yja-edge-open] .yja-swatches i{width:13px;height:13px}
 }
+.yja-ui .yja-custom-color,.yja-ui .yja-opacity-label{grid-column:1/-1;display:flex;align-items:center;gap:6px;justify-content:space-between;min-width:0;font-size:11px}
+.yja-ui .yja-custom-color input{width:54px;height:30px;padding:1px;border:1px solid #526479;background:#26374a;cursor:pointer}
+.yja-ui .yja-opacity-label{display:grid;gap:2px}.yja-ui .yja-opacity-label input{margin:0;min-width:0}
+.yja-ui[data-dock=bottom] .yja-opacity-label{width:112px}.yja-ui[data-dock=bottom] .yja-custom-color{width:94px}
 @media print{.yja-edge-tab{display:none!important}}
 `;
 let edgeDrawer = null;
@@ -1376,7 +1393,7 @@ function installEdgeDrawer() {
   const side = () => panel.dataset.dock === 'left' ? 'left' : panel.dataset.dock === 'bottom' ? 'bottom' : 'right';
   const sync = () => { tab.dataset.dock = side(); };
   const contains = target => !!target && (panel.contains(target) || tab.contains(target));
-  const focusHeld = () => keyboard && contains(document.activeElement) && document.activeElement !== tab;
+  const focusHeld = () => (keyboard || document.activeElement?.matches?.('.yja-custom-color input')) && contains(document.activeElement) && document.activeElement !== tab;
   function setOpen(value) {
     clear(); open = enabled && value;
     if (!open && panel.contains(document.activeElement)) document.activeElement.blur();
@@ -1411,7 +1428,7 @@ function installEdgeDrawer() {
     if(!enabled)return;
     keyboard=false;
     if(contains(e.target)){held=e.pointerId;clear();}
-    else {last={x:e.clientX,y:e.clientY,edge:false};later();}
+    else {if(document.activeElement?.matches?.('.yja-custom-color input'))document.activeElement.blur();last={x:e.clientX,y:e.clientY,edge:false};later();}
   },true);
   function release(e){if(held===e.pointerId){held=null;if(last && !contains(document.elementFromPoint(last.x,last.y)) && !last.edge)later();}}
   window.addEventListener('pointerup',release,true);
@@ -1461,6 +1478,6 @@ window.addEventListener('keydown', event => {
   event.preventDefault();
   toggle();
 }, true);
-Object.defineProperty(window, '__YJA_BOOKMARK_V1', {value: Object.freeze({version:'38.0.0',toggle}),configurable:false});
+Object.defineProperty(window, '__YJA_BOOKMARK_V1', {value: Object.freeze({version:'39.0.0',toggle}),configurable:false});
 toggle();
 })();

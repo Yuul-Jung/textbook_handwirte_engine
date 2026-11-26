@@ -1,0 +1,60 @@
+PASS 8 quick colors
+PASS five quick widths
+PASS width one selected
+PASS default pen 100 percent
+PASS old default stroke has no opacity
+PASS width three selected
+PASS custom RGB selected
+PASS opacity label
+PASS per stroke saved
+PASS old stroke unchanged
+PASS render opacity
+PASS highlight default 30 percent
+PASS highlight independent style
+PASS highlight opacity rendered
+PASS pen style restored
+PASS line inherits opacity
+PASS undo
+PASS redo preserves style
+PASS reload old and new strokes
+PASS reload opacity
+PASS reload pen preset
+PASS reload width three
+PASS no errors
+PASS no injection before activation
+PASS first activation ink on toolbar hidden
+PASS one toolbar and version
+PASS original host unchanged
+PASS thin tab
+PASS hidden panel inert
+PASS edge hover opens
+PASS compact width
+PASS compact pen icon
+PASS compact pen target
+PASS hover inside does not hide
+PASS leaving hides
+PASS click opens
+PASS click then leaving hides
+PASS no reveal during drawing
+PASS cross-page stroke saved
+PASS no hide while toolbar pointer held
+PASS hides after toolbar release
+PASS toolbar movement made no ink
+PASS more tools usable
+PASS left dock tab relocated
+PASS left edge opens
+PASS F8 off removes tab and ink
+PASS original controls off
+PASS F8 on starts hidden
+PASS stored ink unchanged
+PASS duplicate toggles not duplicates
+PASS five cycles stable
+PASS keyboard opens and focuses toolbar
+PASS keyboard focus retained
+PASS keyboard focus exit hides
+PASS no page exceptions
+PASS small screen bottom strip
+PASS small screen click opens
+PASS small screen away hides
+PASS unsupported diagnostic visible
+PASS unsupported no overlay
