@@ -1,0 +1,18 @@
+Local Chromium Playwright run: all three processes exited 0.
+test_color.py: 23 PASS
+test_edge.py: 37 PASS
+test_layout.py: 11 PASS
+PASS inactive label contrast >=4.5
+PASS active label contrast >=4.5
+CONTRAST 11.09 11.2
+PASS course text unchanged
+PASS width and palette before pen
+PASS six widths in top area
+PASS all style controls visible at 640px height without scroll
+PASS topbar compact
+PASS pen control compact
+PASS preset text visible contrast
+PASS 6px selection applied
+PASS 6px stroke persisted
+node --check: exit 0
+Git blob tested: 27720de795f8826b7d7cf7cf581a9f2a65663bf1
