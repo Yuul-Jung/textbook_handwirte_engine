@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         전자교재 판서 엔진 (v35)
 // @namespace    https://yuul-jung.github.io/textbook_handwirte_engine/
-// @version      36.0.0
+// @version      36.0.1
 // @updateURL    https://yuul-jung.github.io/textbook_handwirte_engine/install/annotation.meta.js
 // @downloadURL  https://yuul-jung.github.io/textbook_handwirte_engine/install/annotation.user.js
 // @homepageURL  https://yuul-jung.github.io/textbook_handwirte_engine/install/
@@ -18,11 +18,30 @@
 if (window.top !== window.self) return;
 // Installer handshake is display-only; never activate the engine on installation pages.
 if (location.hostname === 'yuul-jung.github.io' && /^\/textbook_handwirte_engine\/install(?:\/|\/index\.html)?$/.test(location.pathname)) {
-  const version = typeof GM_info !== 'undefined' ? GM_info.script.version : '36.0.0';
+  const version = typeof GM_info !== 'undefined' ? GM_info.script.version : '36.0.1';
   document.documentElement.dataset.yjaInstalledVersion = version;
   return;
 }
 let busy = false, failed = false, style = null;
+const diagnostic = location.hostname === 'yuul-jung.github.io' && /^\/textbook_handwirte_engine\/install\/diagnostic\/(?:index\.html)?$/.test(location.pathname);
+const messages = {on:'판서 켜짐',off:'판서 꺼짐',unsupported:'지원하지 않는 교재 구조 (main 및 고유한 section[id] 필요)',conflict:'기존 판서 엔진 또는 설정이 있습니다. 기존 엔진을 사용하거나 새로고침하세요.',busy:'출력 창을 닫고 다시 시도하세요.',failed:'판서 초기화 실패. 새로고침 후 다시 시도하세요.'};
+let noticeTimer, notice;
+function report(state, detail='') {
+  const text = (messages[state] || state) + (detail ? ' · '+detail : '');
+  console.info('YJA:', text);
+  if (diagnostic) {
+    const out = document.getElementById('diagnostic-result');
+    if (out) out.textContent = text;
+    return;
+  }
+  if (state === 'on' || state === 'off') return;
+  if (!notice || !notice.isConnected) {
+    notice = document.createElement('div'); notice.setAttribute('role','status'); notice.dataset.yjaShortcutNotice = '';
+    notice.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);max-width:85vw;background:#202b3c;color:white;padding:12px 16px;border-radius:8px;font:14px/1.5 system-ui;z-index:2147483647;pointer-events:none';
+    document.body.append(notice);
+  }
+  notice.textContent=text;clearTimeout(noticeTimer);noticeTimer=setTimeout(()=>notice.remove(),6000);
+}
 /* v34: isolated-world adapter. Never change original lesson markup. */
 (() => {
   if (globalThis.__yjaShortcut) return;
@@ -1344,7 +1363,7 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
 
 async function toggle() {
   if (busy) return;
-  if (failed) { console.warn('YJA: 페이지 새로고침 후 다시 시도하세요.'); return; }
+  if (failed) { report('failed'); return; }
   busy = true;
   const bridge = globalThis.__yjaShortcut;
   try {
@@ -1352,24 +1371,33 @@ async function toggle() {
     if (bridge.state() === 'ready') result = bridge.toggle();
     else {
       result = await bridge.prepare();
-      if (result !== 'prepared') { console.warn('YJA: ' + result); return; }
+      if (result !== 'prepared') { report(result); return; }
       style = GM_addStyle(css);
       loadCore();
       result = bridge.complete();
       if (result !== 'on') throw new Error('activation incomplete');
     }
-    if (result !== 'on' && result !== 'off') console.warn('YJA: ' + result);
+    report(result);
   } catch (error) {
     failed = true;
     if (bridge.cleanup()) style?.remove();
-    console.warn('YJA: activation failed; reload before retry', error);
+    report('failed', String(error?.message || error));
   } finally { busy = false; }
 }
 window.addEventListener('keydown', event => {
-  if (event.defaultPrevented || event.repeat || event.isComposing || event.ctrlKey || event.metaKey || !event.altKey || !event.shiftKey || event.code !== 'KeyY') return;
-  if (event.target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"])')) return;
+  if (event.defaultPrevented || event.repeat || event.isComposing || event.ctrlKey || event.metaKey) return;
+  const original = event.altKey && event.shiftKey && event.code === 'KeyY';
+  const alternate = !event.altKey && !event.shiftKey && event.code === 'F8';
+  if (!original && !alternate) return;
+  if (original && event.target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"])')) return;
   event.preventDefault();
   toggle();
 }, true);
-GM_registerMenuCommand('판서 켜기/끄기 (Alt+Shift+Y)', toggle);
+GM_registerMenuCommand('판서 켜기/끄기 (Alt+Shift+Y / F8)', toggle);
+if (diagnostic) {
+  document.documentElement.dataset.yjaInstalledVersion = '36.0.1';
+  const out = document.getElementById('diagnostic-result');
+  if (out) out.textContent = '스크립트 실행 확인 · 실행 버튼 또는 F8로 시험';
+  document.getElementById('diagnostic-toggle')?.addEventListener('click', toggle);
+}
 })();

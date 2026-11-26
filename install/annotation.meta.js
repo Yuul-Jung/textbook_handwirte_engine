@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         전자교재 판서 엔진 (v35)
 // @namespace    https://yuul-jung.github.io/textbook_handwirte_engine/
-// @version      36.0.0
+// @version      36.0.1
 // @updateURL    https://yuul-jung.github.io/textbook_handwirte_engine/install/annotation.meta.js
 // @downloadURL  https://yuul-jung.github.io/textbook_handwirte_engine/install/annotation.user.js
 // @homepageURL  https://yuul-jung.github.io/textbook_handwirte_engine/install/
