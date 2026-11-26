@@ -477,6 +477,7 @@ function loadCore() {
             layer.classList.add('yja-page-layer');document.body.append(layer);anchors.set(PAGE_ANCHOR,layer);
         }else host.append(layer);
         const ui = el('div', 'yja-ui');
+        ui.dataset.yjaEdgeOpen = 'false'; // initial mount is hidden, not a closing animation
         ui.setAttribute('role', 'group');
         ui.setAttribute('aria-label', '교재 판서 도구');
         ui.dataset.dock = innerWidth <= 860 ? 'bottom' : 'right';
@@ -1369,7 +1370,10 @@ button/buttons: ${diagnostic.button}/${diagnostic.buttons}
 
 /* v38: edge drawer, independent of ink and lesson layout. */
 const edgeCss = `
-.yja-ui[data-yja-edge-open="false"]{visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+/* v41: fade without moving or intercepting the lesson; reduced-motion preference respected. */
+.yja-ui[data-yja-edge-open]{transition:opacity 220ms ease,visibility 0s linear;opacity:1}
+.yja-ui[data-yja-edge-open="false"]{visibility:hidden!important;opacity:0!important;pointer-events:none!important;transition:opacity 220ms ease,visibility 0s linear 220ms}
+@media(prefers-reduced-motion:reduce){.yja-ui[data-yja-edge-open]{transition:none!important}}
 .yja-edge-tab{all:initial;box-sizing:border-box;position:fixed;z-index:2147483001;right:0;top:50%;transform:translateY(-50%);width:10px;height:76px;padding:0;border:0;border-radius:5px 0 0 5px;background:#526479;opacity:.72;cursor:pointer;touch-action:manipulation;display:block;color:white}
 .yja-edge-tab::after{content:'';position:absolute;inset:27px 3px;border-radius:2px;background:currentColor}
 .yja-edge-tab:hover,.yja-edge-tab:focus-visible{opacity:1;background:#4635b1;outline:2px solid #fbbf24;outline-offset:-2px}
@@ -1411,13 +1415,14 @@ const edgeCss = `
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-group{gap:3px}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-sep{padding-top:3px}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-widths{grid-template-columns:repeat(3,minmax(0,1fr));gap:2px}
-.yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-widths button{min-height:26px;font-size:12px;font-weight:600}
+.yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-widths button{font-size:10px;font-weight:600}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-style-group .yja-swatches button{min-height:24px}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-custom-color input{height:24px}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-opacity-label{gap:0;line-height:1.25}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) :is(.yja-primary-group,.yja-shape-group,.yja-utility-group,.yja-scope-group,.yja-history-group,.yja-action-group) button{display:flex;align-items:center;justify-content:center;gap:2px;min-height:26px;padding:2px 1px}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) :is(.yja-primary-group,.yja-shape-group,.yja-utility-group,.yja-scope-group,.yja-history-group,.yja-action-group) button small{font-size:10px;overflow-wrap:anywhere}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) :is(.yja-history-group,.yja-action-group) button svg{display:none}
+.yja-ui[data-yja-edge-open]:not([data-dock=bottom]) :is(.yja-widths,.yja-history-group) button{height:24px;min-height:24px;max-height:24px;line-height:1.15;padding:1px}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-scope-group button{grid-column:1/-1}
 .yja-ui[data-yja-edge-open]:not([data-dock=bottom]) .yja-preset{min-height:28px}
 }
@@ -1457,7 +1462,7 @@ function installEdgeDrawer() {
       if (held!==null || focusHeld()) return;
       if (last && (contains(document.elementFromPoint(last.x,last.y)) || last.edge)) return;
       setOpen(false);
-    }, 400);
+    }, 3400);
   }
   function move(e) {
     if (!enabled) return;
@@ -1521,6 +1526,6 @@ window.addEventListener('keydown', event => {
   event.preventDefault();
   toggle();
 }, true);
-Object.defineProperty(window, '__YJA_BOOKMARK_V1', {value: Object.freeze({version:'40.0.0',toggle}),configurable:false});
+Object.defineProperty(window, '__YJA_BOOKMARK_V1', {value: Object.freeze({version:'41.0.0',toggle}),configurable:false});
 toggle();
 })();

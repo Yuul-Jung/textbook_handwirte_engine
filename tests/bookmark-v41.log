@@ -1,0 +1,22 @@
+Local Chromium Playwright, final candidate 198f45ade86e3cf7c0c5b87d87974500c81126c7
+node --check: exit 0
+test_color.py: 23 PASS, exit 0
+test_layout.py: 11 PASS, exit 0
+test_edge.py: 37 PASS, exit 0
+test_v41.py: 15 PASS, exit 0
+PASS six width buttons equal to history buttons at 24px
+PASS width values unchanged
+PASS opened opacity
+PASS still open after 3 seconds
+PASS fade begins rather than immediate disappearance
+PASS fade immediately stops input
+PASS fade has intermediate opacity
+PASS fade completed with ink preserved
+PASS thin tab still visible
+PASS return cancels pending close
+PASS reopen during fade
+PASS explicit F8 off immediate
+PASS F8 on hidden initial
+PASS reduced motion disables transition
+PASS no browser exceptions
+First candidate failed initial hidden state on small screen; set hidden state before mounting and reran all tests.
