@@ -1,0 +1,16 @@
+PASS initial no UI
+PASS bridge alone no UI
+PASS valid config
+PASS activate
+PASS single UI
+PASS original host unchanged
+PASS one stroke saved
+PASS toggle off
+PASS toolbar and ink hidden
+PASS host DOM unchanged off
+PASS original controls work off
+PASS toggle on
+PASS same toolbar visible
+PASS data unchanged
+PASS ink visible again
+PASS five repeated toggles no duplicate
