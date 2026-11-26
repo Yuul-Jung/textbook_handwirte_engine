@@ -1,3 +1,11 @@
+# 전자교재 판서 엔진 — v45 개발 학습안내서
+
+- [온라인 학습안내서](https://yuul-jung.github.io/textbook_handwirte_engine/guide/) — 전체 제작 과정, 설계 구조, 실제 코드 발췌, 따라 하기 실습, 버전 이력과 검증 근거.
+- [판서 실행 페이지](https://yuul-jung.github.io/textbook_handwirte_engine/install/) · [v45 검증 기록](VALIDATION_BOOKMARK_v45.md)
+- 아래 README는 과거 개발 이력을 보존한다. 최신 북마클릿 방식과 과거 WordPress 시험판/고정 로더의 절차를 구분한다.
+
+---
+
 # 전자교재 판서 엔진 v32 — 공통 로더 및 버전 호환성
 
 - `annotation_external_v32.html`: 기존 교재와 JSON 설정 + 공통 로더 연결 예제.
