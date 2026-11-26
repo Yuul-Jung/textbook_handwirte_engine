@@ -1,7 +1,10 @@
 // ==UserScript==
 // @name         전자교재 판서 엔진 (v35)
 // @namespace    https://yuul-jung.github.io/textbook_handwirte_engine/
-// @version      35.0.0
+// @version      36.0.0
+// @updateURL    https://yuul-jung.github.io/textbook_handwirte_engine/install/annotation.meta.js
+// @downloadURL  https://yuul-jung.github.io/textbook_handwirte_engine/install/annotation.user.js
+// @homepageURL  https://yuul-jung.github.io/textbook_handwirte_engine/install/
 // @description  Alt+Shift+Y로 판서 켜기/끄기. 교재 원본 변경 없음.
 // @match        https://yuul-jung.github.io/*
 // @noframes
@@ -13,6 +16,12 @@
 (() => {
 'use strict';
 if (window.top !== window.self) return;
+// Installer handshake is display-only; never activate the engine on installation pages.
+if (location.hostname === 'yuul-jung.github.io' && /^\/textbook_handwirte_engine\/install(?:\/|\/index\.html)?$/.test(location.pathname)) {
+  const version = typeof GM_info !== 'undefined' ? GM_info.script.version : '36.0.0';
+  document.documentElement.dataset.yjaInstalledVersion = version;
+  return;
+}
 let busy = false, failed = false, style = null;
 /* v34: isolated-world adapter. Never change original lesson markup. */
 (() => {
