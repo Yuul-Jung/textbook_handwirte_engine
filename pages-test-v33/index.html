@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AXI LED IP · 판서 WordPress 연동 시험 v32</title>
+<style>
+
+
+</style>
+<style>
+:root{color-scheme:light;--accent:#4635B1;--bg:#F1F2EE;--text:#15171C}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.7 system-ui,sans-serif}header{background:#242c42;color:white;padding:22px max(20px,calc((100vw - 1180px)/2));}header p{color:#FFD24A;font-size:12px;letter-spacing:.13em;margin:0}header h1{font-size:clamp(22px,3vw,32px);margin:5px 0}header .sub{font-size:14px;color:#e6e8ee}.layout{max-width:1180px;margin:20px auto;display:grid;grid-template-columns:240px minmax(0,1fr);gap:20px;padding:0 14px}.nav{align-self:start;position:sticky;top:12px;background:#fff;padding:16px;border:1px solid #ddd;border-radius:10px}.nav a{display:block;text-decoration:none;color:var(--text);padding:8px}.nav a:hover,.nav a:focus{background:#EDEAFA}.nav .current{background:#EDEAFA;border-left:3px solid var(--accent);font-weight:700}.nav strong{font-size:13px}.nav summary{cursor:pointer}.nav hr{border:0;border-top:1px solid #ddd}main{min-width:0}section{background:white;border:1px solid #d8d9d6;border-radius:10px;padding:24px;margin-bottom:16px;scroll-margin-top:12px}h2{font-size:22px;margin:0 0 12px;color:var(--accent)}h3{font-size:17px}.note{border-left:3px solid var(--accent);padding:8px 12px;background:#f2efff}.codehead{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#273246;color:#fff;border-radius:7px 7px 0 0}.copy{font:inherit;font-size:13px;background:white;border:0;border-radius:5px;padding:5px 10px;color:#222;cursor:pointer}pre{margin:0;overflow:auto;padding:16px;background:#151e30;color:#e4eaf5;border-radius:0 0 7px 7px;font:14px/1.7 monospace}.diagram{display:block;width:100%;max-width:600px;height:auto;margin:auto}.blank{height:240px;background-image:linear-gradient(#e8e8ee 1px,transparent 1px),linear-gradient(90deg,#e8e8ee 1px,transparent 1px);background-size:24px 24px;border:1px solid #ddd;border-radius:6px}.mobile-menu{display:none}footer{text-align:center;color:#656570;font-size:12px;padding:20px 20px 90px}.skip{position:absolute;left:-999px}.skip:focus{left:8px;top:8px;z-index:999;background:white;padding:8px}a:focus-visible,button:focus-visible{outline:3px solid #b17b00;outline-offset:2px}@media(max-width:860px){.layout{grid-template-columns:1fr}.nav{position:static;display:none}.nav.open{display:block}.mobile-menu{display:block;margin:12px 14px;padding:10px;font:inherit}section{padding:16px}body{padding-bottom:100px}}@media(min-width:861px) and (max-width:1500px){.layout{margin-right:190px}}@media print{.nav,.mobile-menu,.copy{display:none}.layout{display:block;margin:0}section{break-inside:avoid}}
+.copy{min-width:112px}</style><style>section{min-width:0}.tablewrap{overflow:auto;max-width:100%}table{border-collapse:collapse;min-width:900px;width:100%}td,th{border:1px solid #ddd;padding:10px;text-align:left}th{background:#EDEAFA}pre{max-height:400px;white-space:pre;overflow:auto}figure{margin:16px 0}figure svg{width:100%;height:auto}figcaption{text-align:center;color:#555;font-size:13px}.checklist label{display:block;margin:9px 0}.nav{max-height:calc(100vh - 24px);overflow:auto}@media(max-width:860px){.nav{max-height:none}}</style></head><body><a class="skip" href="#course">본문 바로가기</a><header><p>PART 02 · CHAPTER 01 · ANNOTATION V33 WEB TEST</p><h1>사용자 AXI LED IP</h1><div class="sub">MicroBlaze V → AXI4-Lite → 사용자 LED IP → Basys3 LED0 · 독립 시험</div></header><button class="mobile-menu" aria-controls="nav" aria-expanded="false">☰ 장·목차</button><div class="layout"><nav id="nav" class="nav" aria-label="학습 목차"><strong>AMD SOC RTL · 시험본</strong><hr><a href="#intro">00 시험 안내</a><a href="#overview">01 과제 개요</a><a href="#io">02 입출력 정의</a><a href="#diagram">03 동작 구조</a><a href="#code">04 C 코드</a><a href="#accept">05 동작 확인</a><a href="#extra">06 추가 시험</a></nav><main id="course"><section id="intro"><h2>00. 판서 호환성 시험</h2><div class="note">실제 AXI LED IP 교재의 발췌 문단과 표, 원본 코드 일부를 활용한 독립 시험본입니다. 전체 교재 복제본은 아닙니다. 기존 GitHub 및 NAS 변경 없음.</div><p>펜+마우스로 판서하고, 펜만 판서 모드에서 마우스로 코드 복사·스크롤·체크박스를 조작합니다. Esc로 읽기 모드에 복귀합니다.</p><a href="https://github.com/Yuul-Jung/amd_soc_rtl/blob/main/part02_1/ch01_axi_led_v01.html" target="_blank" rel="noopener noreferrer">원본 교재 보기</a> · <a href="#code">코드 이동</a></section>
+<section id="overview"><h2>1. 과제 개요</h2><p>제1부 11장의 MicroBlaze V SoC를 바탕으로 <strong>사용자 AXI4-Lite LED IP</strong>를 제작합니다. PC 터미널에서 <code>LED ON</code> 또는 <code>LED OFF</code>를 입력하면 CPU가 사용자 IP의 REG0에 값을 기록하고, 해당 레지스터 bit0이 Basys3의 LED0을 제어합니다.</p><p>최종 동작: <code>LED ON</code> → LED0 점등, <code>LED OFF</code> → LED0 소등, <code>STATUS</code> → LED 상태와 레지스터 값 출력.</p></section>
+<section id="io"><h2>2. 입력·출력 정의</h2><div class="tablewrap"><table><thead><tr><th>구분</th><th>신호·명령</th><th>기능</th></tr></thead><tbody><tr><td>PC 입력</td><td><code>LED ON</code>, <code>LED OFF</code>, <code>STATUS</code> + Enter</td><td>UART 문자열 명령</td></tr><tr><td>보드 입력</td><td><code>clk</code>, <code>btnC</code>, <code>sw[15:0]</code>, <code>RsRx</code></td><td>기존 시스템 클록·리셋·스위치·UART 수신 연결</td></tr><tr><td>AXI 입력</td><td><code>S00_AXI</code>, <code>REG0</code> (offset <code>0x00</code>)</td><td>CPU가 32비트 레지스터에 기록하며 bit0이 LED0 출력값</td></tr><tr><td>신규 IP 출력</td><td><code>led_o</code> → <code>p2_led_o</code> → <code>led[0]</code></td><td>사용자 AXI LED IP의 단일 비트 출력</td></tr><tr><td>기존 출력</td><td><code>gpio_led[15:1]</code> → <code>led[15:1]</code></td><td>기존 AXI GPIO LED 출력 배선 유지</td></tr><tr><td>PC 출력</td><td><code>RsTx</code></td><td>UART 명령 처리 결과 및 REG0 읽기값 전송</td></tr></tbody></table></div></section>
+<section id="diagram"><h2>3. 전체 동작 구조</h2><figure><svg viewBox="0 0 800 240" role="img" aria-label="AXI LED 연결 구조"><defs><marker id="arrow15" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="#38536f"/></marker></defs><g fill="#ece9fa" stroke="#4635B1" stroke-width="1.5"><rect x="10" y="30" width="130" height="65" rx="6"/><rect x="170" y="30" width="145" height="65" rx="6"/><rect x="345" y="30" width="120" height="65" rx="6"/><rect x="495" y="30" width="155" height="65" rx="6"/><rect x="680" y="30" width="110" height="65" rx="6"/><rect x="495" y="150" width="155" height="60" rx="6"/><rect x="680" y="150" width="110" height="60" rx="6"/></g><g fill="#15171C" font-size="15" text-anchor="middle"><text x="75" y="66">PC 터미널</text><text x="242" y="66">MicroBlaze V</text><text x="405" y="66">AXI4-Lite</text><text x="572" y="56">p2_01_axi_led</text><text x="572" y="79" font-size="12">slv_reg0[0]</text><text x="735" y="66">LED0</text><text x="572" y="183">AXI GPIO</text><text x="735" y="183">LED1~15</text></g><g fill="none" stroke="#38536f" stroke-width="2" marker-end="url(#arrow15)"><path d="M140 62H168"/><path d="M315 62H343"/><path d="M465 62H493"/><path d="M650 62H678"/><path d="M405 95V180H493"/><path d="M650 180H678"/></g></svg><figcaption>원본 연결 구조를 바탕으로 재구성한 시험용 SVG</figcaption></figure><p>CPU는 레지스터 값을 기록하고, IP는 저장된 bit0 값을 LED0으로 출력합니다. <code>STATUS</code> 명령에서는 레지스터를 다시 읽어 UART에 결과를 표시합니다.</p></section>
+<section id="code"><h2>4. Vitis C 코드 발췌</h2><p>원본 함수 발췌 · 전체 소스는 원본 교재 참조. 이 시험은 C 실행 검증이 아니라 판서 호환성 검증입니다.</p><div class="codeblock"><div class="codehead"><span>P2_01_main.c · C · 원본 발췌</span><button class="copy" type="button">코드 복사</button></div><pre tabindex="0" aria-label="C 코드 스크롤"><code>/* u32 값을 8자리 16진수 문자열로 출력한다. */
+static void uart_hex32(u32 value)
+{
+    const char digits[] = "0123456789ABCDEF";
+    int shift;
+    for (shift = 28; shift &gt;= 0; shift -= 4) {
+        u8 nibble = (u8)((value &gt;&gt; shift) &amp; 0x0FU);
+        XUartLite_SendByte(UART_BASEADDR, (u8)digits[nibble]);
+    }
+}
+
+/* REG0 읽기값에서 LED0 상태를 해석해 출력한다. */
+static void report_status(const char *prefix)
+{
+    u32 value = Xil_In32(USER_IP_BASEADDR + LED_REG_OFFSET);
+    uart_puts(prefix);
+    uart_puts((value &amp; 1U) ? "LED=ON REG0=0x" : "LED=OFF REG0=0x");
+    uart_hex32(value);
+    uart_puts("\r\n");
+}
+
+/* Enter까지 입력받는다. 반환: 1=명령, 0=빈 줄, -1=초과, -2=제어문자. */
+static int read_command_line(char *line, u32 capacity)
+{
+    u32 used = 0U;
+    int overflow = 0;
+    int invalid = 0;  /* NUL 등 제어문자 포함 명령 거부 */
+    while (1) {
+        u8 ch = XUartLite_RecvByte(UART_BASEADDR); /* 1바이트 대기 수신 */
+        if (ch == (u8)'\r' || ch == (u8)'\n') {
+            line[used] = '\0';       /* 항상 문자열을 종료한다. */
+            if (overflow) return -1; /* 버퍼 밖에 쓰지 않는다. */
+            if (invalid) return -2;  /* 제어문자가 포함되면 거부 */
+            return used ? 1 : 0;
+        }
+        if (ch &lt; (u8)0x20U || ch &gt; (u8)0x7EU) {
+            invalid = 1;  /* 출력 가능한 ASCII만 허용 */
+            continue;
+        }
+        if (used &lt; capacity - 1U) {
+            line[used++] = (char)ch;
+        } else {
+            overflow = 1; /* Enter 전까지 초과 문자를 버린다. */
+        }
+    }
+}
+
+/* 문자열을 비교한 후 AXI 레지스터에 기록하거나 읽는다. */
+static void handle_command(const char *line)
+{
+    if (strcmp(line, "LED ON") == 0) {
+        Xil_Out32(USER_IP_BASEADDR + LED_REG_OFFSET, 1U);
+        report_status("OK ");
+    } else if (strcmp(line, "LED OFF") == 0) {
+        Xil_Out32(USER_IP_BASEADDR + LED_REG_OFFSET, 0U);
+        report_status("OK ");
+    } else if (strcmp(line, "STATUS") == 0) {
+        report_status("STATUS ");
+    } else {
+        uart_puts("ERROR: use LED ON / LED OFF / STATUS\r\n");
+    }
+}
+</code></pre></div></section>
+<section id="accept"><h2>5. 동작 확인 목록</h2><div class="checklist"><label><input type="checkbox"/> 복제한 프로젝트에서 기존 BD·Top 연결 확인</label><label><input type="checkbox"/> 새 IP의 <code>slv_reg0[0] → LED0</code> 배선 확인</label><label><input type="checkbox"/> Vivado Validate/Synthesis/Implementation/Timing/Bitstream/XSA 확인</label><label><input type="checkbox"/> Vitis BSP·Application Build와 새 ELF 확인</label><label><input type="checkbox"/> UART 문자열 명령 3개와 LED0 실제 ON/OFF 확인</label><label><input type="checkbox"/> 입력 오류·긴 문자열·재실행 확인</label></div></section>
+<section id="extra"><h2>6. 추가 시험 (교육용 예시)</h2><p>타이밍 및 수식은 판서 기능 검증용 예시이며 원본 교재에는 없는 내용입니다.</p><svg viewBox="0 0 700 160" width="100%" role="img" aria-label="클록 및 출력 예시"><g fill="none" stroke="#4635B1" stroke-width="2.5"><path d="M105 55H145V25H185V55H225V25H265V55H305V25H345V55H385V25H425V55H465V25H505V55H545V25H585V55H655"/><path d="M105 115H225V85H465V115H655"/></g><g font-size="16" fill="#15171C"><text x="15" y="48">clk</text><text x="15" y="106">led_o</text><text x="105" y="145">설명용 예시 · 실제 AXI 핸드셰이크 타이밍 아님</text></g></svg><p>주소 = BASEADDR + OFFSET, LED0 = REG0[0]</p><details><summary>접힌 설명 펼치기</summary><p>펼친 상태와 접힌 상태의 판서 위치가 섞이지 않는지 시험합니다.</p></details><div class="blank"></div></section></main></div><footer>원본 발췌 · 독립 시험본 · 서버 전송 없음</footer><script>const mb=document.querySelector('.mobile-menu'),nav=document.querySelector('#nav');mb.onclick=()=>{const on=nav.classList.toggle('open');mb.setAttribute('aria-expanded',String(on))};document.addEventListener('keydown',e=>{if(e.key==='Escape'){nav.classList.remove('open');mb.setAttribute('aria-expanded','false')}});document.querySelector('.copy').onclick=async function(){try{await navigator.clipboard.writeText(this.closest('.codeblock').querySelector('pre code').textContent);this.textContent='복사 완료'}catch(e){this.textContent='복사 불가 · 직접 선택'}};</script><script type="application/json" data-yja-config>{"host": "#course", "anchors": "section[id]", "course": "yja-pages-isolated-v33", "chapter": "part02-01", "revision": "pages-fixture-1", "pageInk": true, "external": true}</script>
+
+<script src="annotation-loader.js" data-yja-release="v32" defer></script></body></html>

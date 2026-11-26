@@ -1,0 +1,111 @@
+/* Scoped component: never restyle the course itself. */
+.yja-host{position:relative;isolation:isolate}
+.yja-layer{position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none;overflow:hidden;display:block}
+.yja-host.yja-drawing .yja-layer{pointer-events:auto;touch-action:none;cursor:crosshair}
+.yja-layer[hidden]{display:none!important}
+.yja-ui{font:15px/1.45 system-ui,sans-serif;color:#eaf0f8;box-sizing:border-box;position:fixed;z-index:2147483000;right:12px;top:50%;transform:translateY(-50%);max-height:calc(100dvh - 24px);overflow:auto;background:#182535;border:1px solid #526479;border-radius:14px;padding:8px;box-shadow:0 6px 24px #0004;width:76px;display:grid;gap:6px;scrollbar-width:thin;user-select:none}
+.yja-ui *{box-sizing:border-box}.yja-ui[data-dock=left]{right:auto;left:12px}.yja-ui[data-dock=bottom]{top:auto;bottom:12px;left:50%;right:auto;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 24px);display:flex;align-items:center;flex-wrap:wrap;justify-content:center;max-height:36vh}.yja-ui button{font:inherit;color:inherit;background:#26374a;border:1px solid #526479;border-radius:8px;min-height:44px;min-width:44px;padding:4px;cursor:pointer;display:grid;place-items:center;gap:0}.yja-ui button:hover{background:#394d63}.yja-ui button:focus-visible,.yja-ui select:focus-visible,.yja-ui input:focus-visible{outline:3px solid #fbbf24;outline-offset:2px}.yja-ui button[aria-pressed=true]{background:#dbeafe;color:#17385d;border:2px solid #60a5fa}.yja-ui button:disabled{opacity:.4;cursor:default}.yja-ui button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.yja-ui button small{font-size:11px;white-space:nowrap}.yja-ui .yja-group{display:grid;gap:5px}.yja-ui[data-dock=bottom] .yja-group{display:flex;flex-wrap:wrap}.yja-ui .yja-sep{border-top:1px solid #526479;padding-top:6px}.yja-ui[data-dock=bottom] .yja-sep{border:0;border-left:1px solid #526479;padding:0 0 0 6px}.yja-ui .yja-swatches{display:grid;grid-template-columns:repeat(2,1fr);gap:4px}.yja-ui .yja-swatches button{min-width:0;width:27px;min-height:32px}.yja-ui .yja-swatches i{width:17px;height:17px;border:1px solid #fff9;border-radius:50%}.yja-ui .yja-more{display:grid;gap:6px}.yja-ui .yja-more[hidden],.yja-ui [hidden]{display:none!important}.yja-ui[data-collapsed=true] .yja-group,.yja-ui[data-collapsed=true] .yja-more{display:none}.yja-ui .yja-status{font-size:11px;line-height:1.4;color:#cbd5e1;overflow-wrap:anywhere}.yja-ui input[type=range]{width:100%;accent-color:#60a5fa}.yja-ui select{max-width:100%;background:#26374a;color:#fff;border:1px solid #789;border-radius:5px;padding:6px;font:inherit;font-size:12px}.yja-ui label{font-size:11px}.yja-ui .yja-status[data-warn=true]{color:#fde68a}.yja-host.yja-drawing{user-select:none}.yja-ui .yja-toggle{background:#284e75}.yja-ui[data-dock=bottom] .yja-more{display:flex;flex-wrap:wrap;align-items:center;max-width:240px}.yja-ui[data-dock=bottom] .yja-more input[type=range]{width:85px}
+@media(max-width:650px){.yja-ui:not([data-dock=bottom]){width:66px;padding:5px;right:4px}.yja-ui[data-dock=left]{left:4px;right:auto}}
+@media print{.yja-ui{display:none!important}.yja-layer{display:none!important}}
+
+/* v02: mouse navigation with pen-only overlay, and compact input diagnostics. */
+.yja-host.yja-drawing.yja-pen-only{user-select:auto}
+.yja-host.yja-drawing.yja-pen-only .yja-layer{pointer-events:none;touch-action:auto}
+.yja-ui button small{white-space:normal;text-align:center;line-height:1.2}
+.yja-ui .yja-swatches{grid-template-columns:repeat(2,minmax(0,1fr))}
+.yja-ui .yja-swatches button{width:100%;min-height:36px}
+.yja-diagnostic{position:fixed;z-index:2147483001;left:12px;bottom:12px;max-width:calc(100vw - 24px);width:280px;max-height:60dvh;overflow:auto;padding:14px;background:#182535;color:#eaf0f8;border:1px solid #526479;border-radius:12px;font:13px/1.5 system-ui,sans-serif;box-shadow:0 6px 24px #0004;box-sizing:border-box}
+.yja-diagnostic[hidden]{display:none!important}.yja-diag-title{display:flex;align-items:center;justify-content:space-between;font-weight:700;gap:8px}.yja-diagnostic button{min-height:40px;color:inherit;background:#26374a;border:1px solid #526479;border-radius:6px;padding:5px 10px;cursor:pointer;font:inherit}.yja-diagnostic pre.yja-diag-readout{white-space:pre-wrap;font:12px/1.5 monospace;background:#101b2a;color:#eaf0f8;padding:10px;margin:8px 0}.yja-diagnostic input[type=range]{display:block;width:100%;accent-color:#60a5fa}.yja-diagnostic label{display:flex;gap:6px;align-items:center}.yja-diagnostic>button{margin-top:8px}.yja-diagnostic :focus-visible{outline:3px solid #fbbf24;outline-offset:2px}
+@media(max-width:860px){.yja-diagnostic{bottom:100px;max-height:48dvh}}
+@media print{.yja-diagnostic{display:none!important}}
+
+/* Pen-only keeps mouse click/selection and wheel; touch gestures require reading mode. */
+.yja-host.yja-drawing.yja-pen-only{touch-action:none}
+
+/* v03 — drag handle, quick sizes and engine-owned board. */
+.yja-ui .yja-grip{cursor:grab;touch-action:none;font-size:12px;min-height:44px;background:#34475c}.yja-ui .yja-grip:active{cursor:grabbing}
+.yja-ui[data-dock=float]{right:auto;bottom:auto;transform:none;max-width:calc(100vw - 8px);width:82px}
+.yja-ui .yja-widths{display:flex;flex-wrap:wrap;gap:3px}.yja-ui .yja-widths button{min-width:44px;min-height:44px;flex:1}
+.yja-ui .yja-swatches button{min-height:44px;min-width:44px}.yja-ui .yja-swatches{grid-template-columns:1fr 1fr}.yja-ui:not([data-dock=bottom]){width:112px}
+.yja-ui[data-dock=bottom] .yja-widths{display:flex;flex-wrap:nowrap}.yja-ui[data-dock=bottom] .yja-swatches{display:flex;flex-wrap:wrap;max-width:150px}
+.yja-ui[data-collapsed=true] .yja-grip{display:none}.yja-ui[data-collapsed=true] .yja-status{display:none}
+.yja-board[hidden]{display:none!important}.yja-board{box-sizing:border-box;background:#fff;color:#15171c;border:1px solid #d8d9d6;border-radius:10px;padding:20px;margin:16px 0;scroll-margin-top:12px}.yja-board-title{color:#4635b1;font:700 22px/1.5 system-ui,sans-serif;margin:0 0 8px}.yja-board-help{font:14px/1.5 system-ui,sans-serif;margin:0 0 10px}.yja-board-grid{height:560px;background-image:linear-gradient(#dce2e7 1px,transparent 1px),linear-gradient(90deg,#dce2e7 1px,transparent 1px);background-size:24px 24px;border:1px solid #dce2e7}
+@media print{.yja-board{display:none!important}}
+/* (변경) 16-inch FHD: two-column main controls, compact but 44px targets. */
+.yja-ui:not([data-dock=bottom]) .yja-group{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+.yja-ui:not([data-dock=bottom]) .yja-group button{min-width:44px}
+.yja-ui:not([data-dock=bottom]) .yja-group .yja-swatches,.yja-ui:not([data-dock=bottom]) .yja-group .yja-widths{grid-column:1/-1}
+.yja-ui:not([data-dock=bottom]) .yja-more{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+.yja-ui:not([data-dock=bottom]) .yja-more>label,.yja-ui:not([data-dock=bottom]) .yja-more>input,.yja-ui:not([data-dock=bottom]) .yja-more>select{grid-column:1/-1}
+.yja-ui:not([data-dock=bottom])[data-collapsed=true] .yja-group,.yja-ui:not([data-dock=bottom])[data-collapsed=true] .yja-more{display:none}
+
+/* v04: pen-first settings, help and keyboard navigation. */
+.yja-ui .yja-setting{display:flex;align-items:center;gap:3px;min-height:44px;cursor:pointer}
+.yja-ui .yja-setting input{width:19px;height:19px;flex:none;accent-color:#60a5fa}
+.yja-ui .yja-help{font-size:11px;line-height:1.5;color:#dbe5f2;grid-column:1/-1}
+.yja-ui[data-dock=bottom] .yja-help{flex-basis:100%}
+
+/* v07 — quick preset cards */
+.yja-ui .yja-preset svg{width:36px;height:18px;background:#fff;border-radius:3px;stroke-width:2}.yja-ui .yja-preset small{font-size:10px}.yja-ui .yja-preset-status{grid-column:1/-1;font-size:10px;color:#cbd5e1;overflow-wrap:anywhere}.yja-ui .yja-preset-status[data-warn=true]{color:#fde68a}.yja-ui[data-dock=bottom] .yja-preset-status{flex-basis:100%}.yja-ui[data-dock=bottom] .yja-presets{max-width:220px}.yja-ui .yja-preset{min-height:44px}
+/* v08 — page management outside ink surface */
+.yja-board-nav{position:relative;z-index:6;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px;background:#eef0f9;border:1px solid #c8c4df;border-radius:10px;margin:16px 0 0;scroll-margin-top:12px;font:14px/1.4 system-ui,sans-serif;color:#26233e;user-select:auto;touch-action:auto}
+.yja-board-nav[hidden]{display:none!important}.yja-board-count{color:#4635b1;white-space:nowrap}.yja-board-nav button,.yja-board-nav select,.yja-board-nav input{font:inherit;box-sizing:border-box;min-height:44px;border:1px solid #a9a5bf;border-radius:7px;padding:6px 10px;background:#fff;color:#26233e;max-width:100%}.yja-board-nav button{cursor:pointer;min-width:44px}.yja-board-nav button:hover:not(:disabled){background:#e2dff7}.yja-board-nav button:disabled{opacity:.45;cursor:default}.yja-board-nav :focus-visible{outline:3px solid #4635b1;outline-offset:2px}.yja-board-nav select,.yja-board-nav input{width:170px}.yja-board-nav button[aria-label='새 백지']{background:#4635b1;color:#fff}.yja-board-nav button[aria-label='백지 삭제']{color:#a52232}.yja-board-nav+.yja-board{margin-top:8px}
+@media print{.yja-board-nav{display:none!important}}
+
+/* v10 — isolated output preview and print-only snapshot pages. */
+.yja-output-dialog{box-sizing:border-box;width:min(920px,94vw);max-height:90dvh;border:1px solid #c8c4df;border-radius:14px;padding:20px;background:#f1f2ee;color:#15171c;font:15px/1.5 system-ui,sans-serif;overflow:auto;z-index:2147483002}
+.yja-output-dialog::backdrop{background:#18253599}.yja-output-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;color:#4635b1;font-size:20px}.yja-output-settings{display:flex;flex-wrap:wrap;gap:10px;align-items:end}.yja-output-settings label{display:grid;gap:4px;font-size:13px;color:#334155}.yja-output-dialog button,.yja-output-dialog select,.yja-output-card a{font:inherit;min-height:44px;box-sizing:border-box;padding:8px 12px;border:1px solid #aaa8bf;border-radius:8px;background:white;color:#26233e;cursor:pointer;max-width:100%}.yja-output-settings button{background:#4635b1;color:white}.yja-output-dialog button:disabled{opacity:.45;cursor:default}.yja-output-message{padding:10px;background:white;border-left:3px solid #4635b1}.yja-output-message[data-warn=true]{border-color:#a16b00;color:#794c00}.yja-output-previews{display:grid;gap:12px}.yja-output-card{padding:12px;border:1px solid #ddd;border-radius:8px;background:white}.yja-output-card h3{margin:0 0 8px}.yja-output-card img{display:block;max-width:100%;height:auto;margin:0 auto 10px;border:1px solid #ddd}.yja-output-card a{display:inline-block;text-decoration:none;color:#4635b1}.yja-print-root{display:none}
+@media print{body:has(>.yja-print-root:not(:empty))>*:not(.yja-print-root){display:none!important}body:has(>.yja-print-root:not(:empty)){margin:0!important;padding:0!important;background:white!important}.yja-print-root:not(:empty){display:block!important;color:#15171c;font:12px/1.3 system-ui,sans-serif;print-color-adjust:exact;-webkit-print-color-adjust:exact}.yja-print-sheet{display:block;break-after:page;break-inside:avoid;margin:0;padding:0}.yja-print-sheet:last-child{break-after:auto}.yja-print-sheet h2{margin:0 0 3mm;font:700 12pt/1.25 system-ui,sans-serif;overflow-wrap:anywhere}.yja-print-sheet img{display:block;margin:0 auto;max-width:none!important;border:0}}
+
+/* v12: recovery UI independent of folded toolbar; larger touch targets and clear status. */
+.yja-ui .yja-recovery{display:grid;gap:4px;padding:4px;border:1px solid #d9a441;border-radius:8px;background:#352a18;color:#fff1c8}.yja-recovery-text{font-size:12px;line-height:1.4;overflow-wrap:anywhere}.yja-ui .yja-recovery button{min-height:44px;width:100%}.yja-ui[data-dock=bottom] .yja-recovery{display:flex;align-items:center;flex-wrap:wrap;max-width:100%}.yja-ui[data-dock=bottom] .yja-recovery button{width:auto}.yja-ui[data-dock=bottom] .yja-recovery-text{max-width:160px}.yja-ui[data-dock=bottom][data-collapsed=true]{max-height:50dvh}.yja-ui .yja-widths button:focus-visible{outline-offset:-3px}
+
+/* v13 — compact grouped toolbar; scoped to engine only. */
+.yja-ui{padding:8px;gap:6px;border-radius:12px;overscroll-behavior:contain;scrollbar-gutter:stable}
+.yja-ui:not([data-dock=bottom]){width:168px}
+.yja-ui .yja-topbar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;position:sticky;top:0;background:#182535;z-index:2;padding-bottom:5px;border-bottom:1px solid #526479}
+.yja-ui .yja-topbar button{min-width:44px;min-height:44px}
+.yja-ui .yja-topbar button[aria-label="간소화"]{grid-column:1/-1;display:flex;justify-content:center;gap:6px;min-height:44px}
+.yja-ui .yja-mode-readout{grid-column:1/-1;font-size:12px;text-align:center;font-weight:650;padding:5px 2px;border:1px solid #526479;border-radius:6px;color:#eaf0f8;background:#26374a;overflow-wrap:anywhere}
+.yja-ui .yja-mode-readout[data-active=true]{background:#e8e3fb;color:#38258e;border-color:#b6a8ea}
+.yja-ui:not([data-dock=bottom]) .yja-style-group .yja-swatches{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
+.yja-ui:not([data-dock=bottom]) .yja-style-group .yja-swatches button{min-width:0;width:100%;min-height:44px}
+.yja-ui:not([data-dock=bottom]) .yja-widths{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
+.yja-ui:not([data-dock=bottom]) .yja-widths button{min-width:0;min-height:44px}
+.yja-ui[data-compact=true] .yja-style-group{display:none}
+.yja-ui[data-collapsed=true] .yja-topbar button[aria-label="간소화"],.yja-ui[data-collapsed=true] .yja-mode-readout{display:none}
+.yja-ui[data-collapsed=true] .yja-topbar{grid-template-columns:1fr;border:0;padding:0}
+.yja-ui[data-collapsed=true]:not([data-dock=bottom]){width:86px}
+.yja-ui[data-dock=bottom]{max-height:44dvh;overflow:auto;justify-content:start;align-content:start;gap:8px}
+.yja-ui[data-dock=bottom] .yja-topbar{flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;top:0}
+.yja-ui[data-dock=bottom] .yja-topbar button[aria-label="간소화"]{flex:none}
+.yja-ui[data-dock=bottom] .yja-mode-readout{flex:1;min-width:90px}
+.yja-ui[data-dock=bottom][data-collapsed=true] .yja-topbar{flex-basis:auto}
+.yja-ui[data-dock=bottom][data-collapsed=true]{max-height:50dvh}
+.yja-ui[data-dock=bottom] .yja-group{max-width:100%}
+.yja-ui[data-dock=bottom] .yja-swatches button{width:44px}
+.yja-ui[data-dock=bottom] .yja-more{max-width:100%;flex-basis:100%}
+@media(max-width:650px){.yja-ui:not([data-dock=bottom]){width:168px}.yja-ui[data-collapsed=true]:not([data-dock=bottom]){width:86px}}
+
+.yja-ui:not([data-dock=bottom]) .yja-history-group,.yja-ui:not([data-dock=bottom]) .yja-action-group{grid-template-columns:repeat(3,minmax(0,1fr));gap:3px}
+.yja-ui:not([data-dock=bottom]) .yja-history-group button,.yja-ui:not([data-dock=bottom]) .yja-action-group button{min-width:0}
+
+/* v17: loading contract and scoped resistance to generic host theme rules. */
+.yja-ui{--yja-css-contract:1;letter-spacing:normal;text-transform:none;text-align:start}
+.yja-ui button,.yja-diagnostic button,.yja-board-nav button,.yja-output-dialog button{margin:0;letter-spacing:normal;text-transform:none;max-width:100%;float:none}
+.yja-ui button svg{max-width:none;max-height:none;margin:0;vertical-align:middle;flex:none}
+.yja-host > .yja-layer{max-width:none;max-height:none;margin:0;padding:0;border:0;aspect-ratio:auto;float:none}
+/* v19: server controls outside the annotated document, available in authenticated frame only. */
+.yja-sync-panel{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 16px;background:#eDEAFA;color:#15171c;border-bottom:1px solid #c8c2e5;font:14px/1.4 system-ui,sans-serif}
+.yja-sync-panel button{font:inherit;color:#fff;background:#4635B1;border:1px solid #4635B1;border-radius:5px;min-height:44px;padding:6px 12px;cursor:pointer}
+.yja-sync-panel button:disabled{opacity:.55;cursor:default}.yja-sync-panel button:focus-visible{outline:3px solid #b17b00;outline-offset:2px}
+@media print{.yja-sync-panel{display:none}}
+
+/* v21: opt-in document layer; always transparent to controls, input captured separately. */
+body > .yja-page-layer{position:absolute;inset:auto;left:0;top:0;z-index:2147482990;pointer-events:none!important;overflow:hidden;max-width:none;max-height:none;margin:0;padding:0;border:0;aspect-ratio:auto;float:none}
+body.yja-page-drawing:not(.yja-page-pen-only){user-select:none}body.yja-page-drawing{touch-action:none}
+.yja-ui .yja-scope-group button{grid-column:1/-1;min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px}
+
+/* v22: quick shape controls remain available in compact mode. */
+.yja-ui .yja-shape-group{border-top:1px solid #526479;padding-top:5px}
+.yja-ui .yja-shape-group button[aria-label="자동 도형"][aria-pressed=true]{background:#e8e3fb;color:#38258e;border-color:#a99ae5}

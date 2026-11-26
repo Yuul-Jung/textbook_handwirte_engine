@@ -1,0 +1,11 @@
+PASS index.html HTTP 200 and exact bytes
+PASS rollback.html HTTP 200 and exact bytes
+PASS annotation-loader.js HTTP 200 and exact bytes
+PASS v31/annotation.css HTTP 200 / exact bytes / SRI hash / MIME
+PASS v31/annotation-config.js HTTP 200 / exact bytes / SRI hash / MIME
+PASS v31/annotation.js HTTP 200 / exact bytes / SRI hash / MIME
+PASS v32/annotation.css HTTP 200 / exact bytes / SRI hash / MIME
+PASS v32/annotation-config.js HTTP 200 / exact bytes / SRI hash / MIME
+PASS v32/annotation.js HTTP 200 / exact bytes / SRI hash / MIME
+PASS missing version returns 404
+10/10 real HTTP asset checks passed

@@ -124,3 +124,9 @@ python tests/test_server_browser.py
 - `annotation_course_v27.html`을 브라우저에서 열어 자유 펜, 형광펜, 짧은 점, 빠른 지우개, 펜과 마우스 전환을 시험한다. 기존 JSON 백업 권장. 새 버튼은 없다.
 - 실행: `node tests/test_input_v27.cjs`, `python tests/test_input_v27.py`, `python tests/test_input_stress_v27.py`. v26 비교는 `python tests/test_input_v27.py /path/to/annotation_engine_v26` (의도된 실패 포함).
 - 상세 시험 결과: `VALIDATION_v27.md`, `tests/v27/`. 실제 기기/영구 저장/운영 서버 검증 전 운영 설치 보류.
+
+## v33 — 독립 웹 시험 패키지
+
+- `pages-test-v33/index.html`: v32 고정 독립 웹 시험. `rollback.html`: v31 복귀 시험.
+- 시험 전용 교재 ID 사용. 운영 교재 및 NAS/WordPress 변경 없음.
+- `ANNOTATION_STANDARD_v33.md`, `VALIDATION_v33.md` 참조. Pages의 실제 HTTPS 및 브라우저 영구 저장은 미검증 상태이며 배포 성공으로 간주하지 않는다.
